@@ -31,6 +31,11 @@ body {
   color: var(--text);
   min-height: 100vh;
   transition: background 0.3s ease, color 0.3s ease;
+  cursor: crosshair;
+}
+
+a, button, .showcase-card {
+  cursor: pointer;
 }
 
 main {
@@ -48,7 +53,7 @@ main {
 .header {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .name {
@@ -61,6 +66,11 @@ main {
   cursor: default;
 }
 
+.name-scrambling {
+  font-family: var(--font-geist-mono), monospace;
+  color: var(--text-faint);
+}
+
 .location {
   font-size: 15px;
   font-weight: 400;
@@ -70,13 +80,275 @@ main {
   letter-spacing: -0.02em;
 }
 
+/* Navigation */
+.nav {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out 0.1s forwards;
+}
+
+.nav a {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-faint);
+  text-decoration: none;
+  letter-spacing: -0.02em;
+  transition: color 0.2s ease;
+}
+
+.nav a:hover {
+  color: var(--text-muted);
+}
+
+/* About Section */
+.about {
+  max-width: 400px;
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.about p {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text-subtle);
+  letter-spacing: -0.02em;
+  line-height: 1.6;
+}
+
+/* Convictions Section */
+.convictions {
+  max-width: 400px;
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.convictions-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  counter-reset: conviction;
+}
+
+.convictions-list li {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text-muted);
+  letter-spacing: -0.02em;
+  line-height: 1.5;
+  display: flex;
+  gap: 12px;
+  counter-increment: conviction;
+}
+
+.convictions-list li::before {
+  content: "0" counter(conviction);
+  font-size: 13px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+  min-width: 20px;
+}
+
+.convictions-list a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.convictions-list a:hover {
+  text-decoration: underline;
+}
+
+/* Page Layout (for subpages) */
+.page {
+  padding: 160px 0 80px 280px;
+}
+
+.page-header {
+  margin-bottom: 48px;
+}
+
+.back-link {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-faint);
+  text-decoration: none;
+  letter-spacing: -0.02em;
+  transition: color 0.2s ease;
+}
+
+.back-link:hover {
+  color: var(--text-muted);
+}
+
+.page-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: -0.02em;
+  margin-top: 8px;
+}
+
+/* Writing page styles */
+.writing-list {
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.writing-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 32px;
+  align-items: baseline;
+}
+
+.writing-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.writing-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.writing-title::after {
+  content: " \2197";
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.writing-title:hover::after {
+  opacity: 1;
+}
+
+.writing-title:hover {
+  opacity: 0.6;
+}
+
+.writing-publication {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text-subtle);
+  letter-spacing: -0.02em;
+}
+
+.writing-year {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text-faint);
+  letter-spacing: -0.02em;
+  text-align: right;
+}
+
+/* Photos page styles */
+.photos-showcase {
+  height: 300vh;
+  width: 100vw;
+  position: relative;
+}
+
+.photos-showcase-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  padding-left: 280px;
+  overflow: hidden;
+}
+
+.photos-showcase-cards {
+  display: flex;
+  gap: 12px;
+  will-change: transform;
+  transition: transform 0.1s ease-out;
+}
+
+.photo-item {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.photo-card {
+  width: 400px;
+  height: 300px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.photo-caption {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-faint);
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 80px 24px 48px;
+  }
+
+  .page-header[style] {
+    padding: 80px 24px 0 24px !important;
+  }
+
+  .photos-showcase-sticky {
+    padding-left: 24px;
+  }
+
+  .photo-card {
+    width: 280px;
+    height: 210px;
+  }
+}
+
+/* Touch device support for photos */
+@media (hover: none) and (pointer: coarse) {
+  .photos-showcase {
+    height: auto;
+  }
+
+  .photos-showcase-sticky {
+    position: relative;
+    height: auto;
+    padding-top: 48px;
+    padding-bottom: 48px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .photos-showcase-cards {
+    transform: none !important;
+    padding-right: 24px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .photo-item {
+    scroll-snap-align: start;
+  }
+}
+
 .section-title {
   font-size: 11px;
   font-weight: 500;
   color: var(--text-faint);
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .experience {
@@ -179,16 +451,42 @@ a.company:hover {
   transition: transform 0.1s ease-out;
 }
 
-.showcase-card {
+.showcase-item {
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.showcase-item a {
+  display: block;
+}
+
+.showcase-card {
   width: 900px;
-  height: 630px;
+  height: 500px;
   background: var(--card-bg);
   border-radius: 0;
   border: 1px solid var(--border);
   position: relative;
   overflow: hidden;
   transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.showcase-caption {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-faint);
+  letter-spacing: -0.02em;
+}
+
+.showcase-caption-link {
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.showcase-caption-link:hover {
+  color: var(--text-muted);
 }
 
 /* Mobile responsive */
@@ -209,7 +507,7 @@ a.company:hover {
 
   .showcase-card {
     width: 500px;
-    height: 350px;
+    height: 280px;
   }
 
   .showcase-card-number {
@@ -238,7 +536,7 @@ a.company:hover {
     scroll-snap-type: x mandatory;
   }
 
-  .showcase-card {
+  .showcase-item {
     scroll-snap-align: start;
   }
 }
@@ -295,10 +593,10 @@ a.company:hover {
 /* Theme Toggle */
 .theme-toggle {
   position: fixed;
-  top: 24px;
-  right: 24px;
-  width: 36px;
-  height: 36px;
+  top: 160px;
+  right: 280px;
+  width: 30px;
+  height: 30px;
   border: 1px solid var(--border);
   border-radius: 50%;
   background: var(--card-bg);
@@ -315,8 +613,8 @@ a.company:hover {
 }
 
 .theme-toggle-inner {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   border: 1.5px solid var(--text-faint);
   background: transparent;
@@ -332,5 +630,10 @@ a.company:hover {
   .footer {
     margin-left: -24px;
     padding: 48px 24px;
+  }
+
+  .theme-toggle {
+    top: 24px;
+    right: 24px;
   }
 }

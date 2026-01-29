@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import ShowcaseSection from "./components/ShowcaseSection";
 
 type CharData = { char: string; opacity: number };
@@ -11,22 +12,8 @@ export default function Home() {
     originalName.split("").map((c) => ({ char: c, opacity: 1 }))
   );
   const [isHovering, setIsHovering] = useState(false);
-  const [theme, setTheme] = useState<"light" | "warm">("light");
+  const [isScrambling, setIsScrambling] = useState(false);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("theme") as "light" | "warm" | null;
-    if (saved) {
-      setTheme(saved);
-      document.documentElement.setAttribute("data-theme", saved);
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "warm" : "light";
-    setTheme(newTheme);
-    document.documentElement.setAttribute("data-theme", newTheme);
-    localStorage.setItem("theme", newTheme);
-  };
   const scrambleIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const cycleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -35,6 +22,7 @@ export default function Home() {
     if (scrambleIntervalRef.current) clearInterval(scrambleIntervalRef.current);
     if (stopTimeoutRef.current) clearTimeout(stopTimeoutRef.current);
 
+    setIsScrambling(true);
     scrambleIntervalRef.current = setInterval(() => {
       setChars(
         originalName.split("").map((c) => ({
@@ -50,6 +38,7 @@ export default function Home() {
           clearInterval(scrambleIntervalRef.current);
           scrambleIntervalRef.current = null;
         }
+        setIsScrambling(false);
         setChars(originalName.split("").map((c) => ({ char: c, opacity: 1 })));
       }, duration);
     }
@@ -64,6 +53,7 @@ export default function Home() {
       clearTimeout(stopTimeoutRef.current);
       stopTimeoutRef.current = null;
     }
+    setIsScrambling(false);
     setChars(originalName.split("").map((c) => ({ char: c, opacity: 1 })));
   };
 
@@ -101,14 +91,10 @@ export default function Home() {
   }, [isHovering]);
 
   return (
-    <>
-      <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
-        <span className="theme-toggle-inner" />
-      </button>
-      <main>
+    <main>
       <header className="header">
         <h1
-          className="name"
+          className={`name ${isScrambling ? "name-scrambling" : ""}`}
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
         >
@@ -117,7 +103,26 @@ export default function Home() {
           ))}
         </h1>
         <p className="location">San Francisco</p>
+        <nav className="nav">
+          <Link href="/photos">Photos</Link>
+          <Link href="/writing">Writing</Link>
+        </nav>
       </header>
+
+      <section className="about">
+        <p>
+          Creative technologist, currently tinkering with e-ink interfaces and coding software i want to exist.
+        </p>
+      </section>
+
+      <section className="convictions">
+        <h2 className="section-title">Convictions</h2>
+        <ul className="convictions-list">
+          <li><span>Self-driving cars are necessary</span></li>
+          <li><span>Clarity and intentionality are core to a good life</span></li>
+          <li><span>Spatial computing is the future of interfaces</span></li>
+        </ul>
+      </section>
 
       <section className="experience">
         <h2 className="section-title">Experience</h2>
@@ -152,6 +157,5 @@ export default function Home() {
         <p className="copyright">&copy; 2025 Roy Jad</p>
       </footer>
     </main>
-    </>
   );
 }
