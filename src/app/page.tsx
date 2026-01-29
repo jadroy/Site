@@ -103,15 +103,11 @@ export default function Home() {
           ))}
         </h1>
         <p className="location">San Francisco</p>
-        <nav className="nav">
-          <Link href="/photos">Photos</Link>
-          <Link href="/writing">Writing</Link>
-        </nav>
       </header>
 
       <section className="about">
         <p>
-          Creative technologist, currently tinkering with e-ink interfaces and coding software i want to exist.
+          Creative technologist, currently tinkering with e-ink interfaces and coding stuff i want to exist.
         </p>
       </section>
 
@@ -147,6 +143,8 @@ export default function Home() {
 
       <footer className="footer">
         <div className="footer-links">
+          <Link href="/photos">Photos</Link>
+          <Link href="/writing">Writing</Link>
           <a href="mailto:jadroy77@gmail.com">Email</a>
           <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer">Twitter</a>
           <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer">LinkedIn</a>

@@ -11,40 +11,56 @@ const photos = [
 
 export default function PhotosPage() {
   const sectionRef = useRef<HTMLElement>(null);
+  const cardsRef = useRef<HTMLDivElement>(null);
   const [translateX, setTranslateX] = useState(0);
+  const [sectionHeight, setSectionHeight] = useState("100vh");
+  const [maxTranslate, setMaxTranslate] = useState(0);
 
   useEffect(() => {
+    const calculateDimensions = () => {
+      if (!cardsRef.current) return;
+
+      const paddingLeft = window.innerWidth <= 768 ? 24 : 280;
+      const totalCardsWidth = cardsRef.current.scrollWidth;
+      const scrollableWidth = Math.max(0, totalCardsWidth - window.innerWidth + paddingLeft);
+
+      setMaxTranslate(scrollableWidth);
+
+      const scrollMultiplier = 1.5;
+      const height = window.innerHeight + scrollableWidth * scrollMultiplier;
+      setSectionHeight(`${height}px`);
+    };
+
     const handleScroll = () => {
       if (!sectionRef.current) return;
 
       const section = sectionRef.current;
       const rect = section.getBoundingClientRect();
-      const sectionHeight = section.offsetHeight;
+      const sectionHeightPx = section.offsetHeight;
       const viewportHeight = window.innerHeight;
 
       const scrollStart = rect.top;
       const scrollEnd = rect.bottom - viewportHeight;
-      const scrollRange = sectionHeight - viewportHeight;
+      const scrollRange = sectionHeightPx - viewportHeight;
 
-      if (scrollStart <= 0 && scrollEnd >= 0) {
+      if (scrollStart <= 0 && scrollEnd >= 0 && scrollRange > 0) {
         const progress = Math.abs(scrollStart) / scrollRange;
         const clampedProgress = Math.max(0, Math.min(1, progress));
-
-        const cardWidth = window.innerWidth <= 768 ? 280 : 400;
-        const gap = 12;
-        const paddingLeft = window.innerWidth <= 768 ? 24 : 280;
-        const totalCardsWidth = photos.length * cardWidth + (photos.length - 1) * gap;
-        const maxTranslate = Math.max(0, totalCardsWidth - window.innerWidth + paddingLeft + gap);
-
         setTranslateX(-clampedProgress * maxTranslate);
       }
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
+    const timer = setTimeout(calculateDimensions, 100);
 
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    window.addEventListener("resize", calculateDimensions);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", calculateDimensions);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [maxTranslate]);
 
   return (
     <>
@@ -55,9 +71,10 @@ export default function PhotosPage() {
         <h1 className="page-title">Photos</h1>
       </header>
 
-      <section className="photos-showcase" ref={sectionRef}>
+      <section className="photos-showcase" ref={sectionRef} style={{ height: sectionHeight }}>
         <div className="photos-showcase-sticky">
           <div
+            ref={cardsRef}
             className="photos-showcase-cards"
             style={{ transform: `translateX(${translateX}px)` }}
           >
