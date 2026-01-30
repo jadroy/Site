@@ -37,11 +37,7 @@ const createDrumSound = (type: "kick" | "snare" | "hihat") => {
 
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "warm">("light");
-  const [blur, setBlur] = useState(false);
-  const [focus, setFocus] = useState(false);
   const [drums, setDrums] = useState(false);
-  const [scanlines, setScanlines] = useState(false);
-  const [bgImage, setBgImage] = useState(false);
   const drumsRef = useRef(false);
 
   useEffect(() => {
@@ -89,33 +85,10 @@ export default function ThemeToggle() {
     localStorage.setItem("theme", newTheme);
   };
 
-  const toggleBlur = () => {
-    const newBlur = !blur;
-    setBlur(newBlur);
-    document.body.classList.toggle("blur-mode", newBlur);
-  };
-
-  const toggleFocus = () => {
-    const newFocus = !focus;
-    setFocus(newFocus);
-    document.body.classList.toggle("focus-mode", newFocus);
-  };
-
   const toggleDrums = () => {
     setDrums(!drums);
   };
 
-  const toggleScanlines = () => {
-    const newScanlines = !scanlines;
-    setScanlines(newScanlines);
-    document.body.classList.toggle("scanlines-mode", newScanlines);
-  };
-
-  const toggleBgImage = () => {
-    const newBgImage = !bgImage;
-    setBgImage(newBgImage);
-    document.body.classList.toggle("bg-image-mode", newBgImage);
-  };
 
   const [breathe, setBreathe] = useState(false);
 
@@ -131,44 +104,12 @@ export default function ThemeToggle() {
         <span className="theme-toggle-inner" />
       </button>
       <button
-        className={`theme-toggle ${blur ? "active" : ""}`}
-        onClick={toggleBlur}
-        aria-label="Toggle blur"
-        title="Blur"
-      >
-        <span className="toggle-icon">◯</span>
-      </button>
-      <button
-        className={`theme-toggle ${focus ? "active" : ""}`}
-        onClick={toggleFocus}
-        aria-label="Toggle focus mode"
-        title="Focus mode"
-      >
-        <span className="toggle-icon">◎</span>
-      </button>
-      <button
         className={`theme-toggle ${drums ? "active" : ""}`}
         onClick={toggleDrums}
         aria-label="Toggle drums"
         title="Drums"
       >
         <span className="toggle-icon">♪</span>
-      </button>
-      <button
-        className={`theme-toggle ${scanlines ? "active" : ""}`}
-        onClick={toggleScanlines}
-        aria-label="Toggle scanlines"
-        title="Scanlines"
-      >
-        <span className="toggle-icon">▤</span>
-      </button>
-      <button
-        className={`theme-toggle ${bgImage ? "active" : ""}`}
-        onClick={toggleBgImage}
-        aria-label="Toggle background image"
-        title="Picture background"
-      >
-        <span className="toggle-icon">▣</span>
       </button>
       <button
         className={`theme-toggle ${breathe ? "active" : ""}`}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
 import ShowcaseSection from "./components/ShowcaseSection";
 
 type CharData = { char: string; opacity: number };
@@ -139,12 +138,12 @@ export default function Home() {
         </div>
       </section>
 
-      <ShowcaseSection />
+      {/* <ShowcaseSection /> */}
 
       <footer className="footer">
         <div className="footer-links">
-          <Link href="/photos">Photos</Link>
-          <Link href="/writing">Writing</Link>
+          <span className="coming-soon">Photos (coming soon)</span>
+          <span className="coming-soon">Writing (coming soon)</span>
           <a href="mailto:jadroy77@gmail.com">Email</a>
           <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer">Twitter</a>
           <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
