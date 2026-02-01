@@ -101,7 +101,7 @@ export default function Home() {
       <div className="line"><span className="ln">07</span><span className="content">Clarity and intentionality are core to a good life</span></div>
       <div className="line"><span className="ln">08</span><span className="content">Spatial computing is the future of interfaces</span></div>
       <div className="line gap"><span className="ln"></span></div>
-      <div className="line"><span className="ln">09</span><h2 className="section-title">Experience</h2></div>
+      <div className="line"><span className="ln">09</span><h2 className="section-title">Work</h2></div>
       <div className="line"><span className="ln">10</span><a href="https://context.ai" className="company" target="_blank" rel="noopener noreferrer">Context</a><span className="years">2025</span></div>
       <div className="line"><span className="ln">11</span><span className="role">Founding Designer</span></div>
       <div className="line"><span className="ln"></span></div>
