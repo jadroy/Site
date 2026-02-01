@@ -94,7 +94,7 @@ export default function Home() {
       <div className="line"><span className="ln">02</span><span className="location">San Francisco</span></div>
       <div className="line gap"><span className="ln"></span></div>
       <div className="line"><span className="ln">03</span><p className="about">Creative technologist, currently tinkering with</p></div>
-      <div className="line"><span className="ln">04</span><p className="about">e-ink interfaces and coding stuff i want to exist.</p></div>
+      <div className="line"><span className="ln">04</span><p className="about">e-ink interfaces and coding stuff I'd like to exist.</p></div>
       <div className="line gap"><span className="ln"></span></div>
       <div className="line"><span className="ln">05</span><h2 className="section-title">Convictions</h2></div>
       <div className="line"><span className="ln">06</span><span className="content">Self-driving cars are necessary</span></div>
