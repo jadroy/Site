@@ -44,9 +44,9 @@ html::-webkit-scrollbar {
   --content-padding-x: 24px;
   --content-padding-y: 80px;
   --line-number-width: 28px;
-  --showcase-card-height: 280px;
+  --showcase-card-height: 360px;
   --content-offset: 0px;
-  --content-max-width: 700px;
+  --content-max-width: 480px;
 }
 
 /* Responsive breakpoint overrides */
@@ -54,7 +54,7 @@ html::-webkit-scrollbar {
   :root {
     --content-padding-x: 32px;
     --line-number-width: 32px;
-    --showcase-card-height: 380px;
+    --showcase-card-height: 480px;
   }
 }
 
@@ -62,7 +62,7 @@ html::-webkit-scrollbar {
   :root {
     --content-padding-x: 40px;
     --line-number-width: 36px;
-    --showcase-card-height: 420px;
+    --showcase-card-height: 60vh;
     --content-offset: 80px;
   }
 }
@@ -70,7 +70,7 @@ html::-webkit-scrollbar {
 @media (min-width: 1280px) {
   :root {
     --line-number-width: 40px;
-    --showcase-card-height: 500px;
+    --showcase-card-height: 70vh;
     --content-offset: calc(50vw - 750px);
   }
 }
@@ -187,17 +187,26 @@ main {
   min-width: 100vw;
 }
 
-@media (min-width: 1024px) {
-  .showcase-panel {
-    padding-left: calc(50vw - 350px + var(--content-offset));
-  }
+/* Showcase with line numbers */
+.showcase-with-lines {
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+  margin-right: 80px;
+}
+
+.showcase-lines-content {
+  display: flex;
+  flex-direction: column;
+  padding-top: 4px;
+  flex-shrink: 0;
 }
 
 /* Horizontal showcase cards */
 .showcase-cards-horizontal {
   display: flex;
   gap: 12px;
-  align-items: center;
+  align-items: flex-start;
   height: 100%;
 }
 
@@ -205,14 +214,16 @@ main {
   display: grid;
   grid-template-columns: var(--line-number-width) 1fr auto;
   align-items: baseline;
-  line-height: 1.2;
-  min-height: calc(15px * 1.2);
+  line-height: 1.22;
+  min-height: calc(15px * 1.22);
   max-width: var(--content-max-width, 500px);
 }
+
 
 .line.gap {
   min-height: calc(15px * 1.5);
 }
+
 
 .line-right {
   text-align: right;
@@ -224,8 +235,8 @@ main {
   user-select: none;
   font-size: clamp(10px, 2vw, 12px);
   font-weight: 300;
-  line-height: 1.4;
-  padding-top: 0.35em;
+  line-height: inherit;
+  min-height: 1em;
 }
 
 .empty {
@@ -240,7 +251,29 @@ main {
   color: var(--text-muted);
 }
 
-/* Social/Contact Links */
+.tree-branch {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Contact Links */
+.contact-links {
+  display: flex;
+  gap: 1.5em;
+}
+
+.contact-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 15px;
+  transition: color 0.2s ease;
+}
+
+.contact-links a:hover {
+  color: var(--text);
+}
+
+/* Social/Contact Links (legacy) */
 .social-links {
   display: flex;
   gap: 8px;
@@ -662,7 +695,7 @@ main {
 .section-title {
   font-size: 15px;
   font-weight: 400;
-  color: var(--text-muted);
+  color: #ccc;
   letter-spacing: -0.03em;
   margin: 0;
 }
@@ -774,8 +807,6 @@ a.company:hover {
   font-weight: 400;
   color: var(--text-muted);
   letter-spacing: -0.02em;
-  text-align: right;
-  justify-self: end;
 }
 
 .case-study-link {
@@ -793,13 +824,17 @@ a.company:hover {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
+    filter: blur(2px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+    filter: blur(0);
   }
 }
+
+
 
 /* Showcase Section */
 .showcase {
