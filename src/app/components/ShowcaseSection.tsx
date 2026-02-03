@@ -9,10 +9,20 @@ const showcaseItems = [
 
 export default function ShowcaseSection() {
   const cards = showcaseItems;
+  // Generate line numbers based on card count (cards have height, so ~20 lines each)
+  const linesPerCard = 18;
+  const totalLines = cards.length * linesPerCard;
+  const startLine = 18; // Continue from main content line numbers
 
   return (
-    <div className="showcase-cards-horizontal">
-      {cards.map((item, index) => {
+    <div className="showcase-with-lines">
+      <div className="showcase-line-numbers">
+        {Array.from({ length: totalLines }, (_, i) => (
+          <span key={i} className="ln">{String(startLine + i).padStart(2, '0')}</span>
+        ))}
+      </div>
+      <div className="showcase-cards-horizontal">
+        {cards.map((item, index) => {
         const cardContent = item.type === "video" ? (
           <div className="showcase-card">
             <video
@@ -57,6 +67,7 @@ export default function ShowcaseSection() {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
