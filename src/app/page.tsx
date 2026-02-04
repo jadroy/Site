@@ -101,7 +101,7 @@ export default function Home() {
   const [numberingMode, setNumberingMode] = useState<NumberingMode>('none');
 
   // Layout sliders
-  const [contentWidth, setContentWidth] = useState(570);
+  const [contentWidth, setContentWidth] = useState(700);
   const [fontSize, setFontSize] = useState(15);
   const [lineHeight, setLineHeight] = useState(1.25);
   const [gapSize, setGapSize] = useState(2.1);
@@ -232,42 +232,29 @@ export default function Home() {
           '--tree-branch-size': `${treeBranchSize}px`
         } as React.CSSProperties}>
         <div className="main-content">
-          <div className="line"><span className="ln">{showNumber('01')}</span><h1 className={`name ${isScrambling ? "name-scrambling" : ""}`} onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}>{chars.map((c, i) => (<span key={i} style={{ opacity: c.opacity }}>{c.char}</span>))}</h1></div>
-          <div className="line"><span className="ln">{showNumber('02')}</span><span className="location"><span className="tree-branch">⎿</span> San Francisco</span></div>
-          <div className="line gap"><span className="ln"></span></div>
-          <div className="line"><span className="ln">{showNumber('03')}</span><p className="about">Creative technologist, currently tinkering with</p></div>
-          <div className="line"><span className="ln">{showNumber('04')}</span><p className="about">e-ink interfaces and making stuff I'd like to exist.</p></div>
-          <div className="line gap"><span className="ln"></span></div>
-          <div className="line"><span className="ln">{showNumber('05', true)}</span><h2 className="section-title section-title-muted">Convictions</h2></div>
-          <div className="line"><span className="ln">{showNumber('06')}</span><span className="conviction-item"><span className="tree-branch">⎿</span> Self-driving cars are necessary</span></div>
-          <div className="line"><span className="ln">{showNumber('07')}</span><span className="conviction-item"><span className="tree-branch">⎿</span> Clarity and intentionality are core to a good life</span></div>
-          <div className="line"><span className="ln">{showNumber('08')}</span><span className="conviction-item"><span className="tree-branch">⎿</span> Spatial computing is the future of interfaces</span></div>
-          <div className="line gap"><span className="ln"></span></div>
-          <div className="line"><span className="ln">{showNumber('09')}</span><span className="company-row"><a href="https://context.ai" className="company" target="_blank" rel="noopener noreferrer">Context</a><span className="years">2025</span></span></div>
-          <div className="line"><span className="ln">{showNumber('10')}</span><span className="role"><span className="tree-branch">⎿</span> Founding Designer</span></div>
-          <div className="line gap"><span className="ln"></span></div>
-          <div className="line"><span className="ln">{showNumber('11')}</span><span className="company-row"><span className="company">Various companies</span><span className="years">2021–2025</span></span></div>
-          <div className="line"><span className="ln">{showNumber('12')}</span><span className="role"><span className="tree-branch">⎿</span> YC, a16z, 776</span></div>
-          <div className="line"><span className="ln">{showNumber('13')}</span><span className="role"><span className="tree-branch">⎿</span> Independent Contractor</span></div>
-          <div className="line gap"><span className="ln"></span></div>
-          <div className="line">
-            <span className="ln">{showNumber('16')}</span>
-            <div className="social-links">
-              <a href="mailto:jadroy77@gmail.com" className="social-box">Email</a>
-              <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer" className="social-box">Twitter</a>
-              <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer" className="social-box">LinkedIn</a>
-            </div>
-          </div>
-        </div>
+          <div className="line"><span className="ln">{showNumber('01')}</span><span className="years"></span><h1 className={`name ${isScrambling ? "name-scrambling" : ""}`} onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}>{chars.map((c, i) => (<span key={i} style={{ opacity: c.opacity }}>{c.char}</span>))}:</h1></div>
+          <div className="line"><span className="ln">{showNumber('02')}</span><span className="years"></span><span className="location"><span className="tree-branch">⎿</span> San Francisco</span></div>
+          <div className="line"><span className="ln">{showNumber('03')}</span><span className="years"></span><span className="about"><span className="tree-branch">⎿</span> Creative technologist, currently tinkering with e-ink interfaces and making stuff I'd like to exist.</span></div>
+          <div className="line gap"><span className="ln"></span><span className="years"></span></div>
+          <div className="line"><span className="ln">{showNumber('05', true)}</span><span className="years"></span><h2 className="section-title section-title-muted">Convictions:</h2></div>
+          <div className="line"><span className="ln">{showNumber('06')}</span><span className="years"></span><span className="conviction-item"><span className="tree-branch">⎿</span> Self-driving cars are necessary</span></div>
+          <div className="line"><span className="ln">{showNumber('07')}</span><span className="years"></span><span className="conviction-item"><span className="tree-branch">⎿</span> Clarity and intentionality are core to a good life</span></div>
+          <div className="line"><span className="ln">{showNumber('08')}</span><span className="years"></span><span className="conviction-item"><span className="tree-branch">⎿</span> Spatial computing is the future of interfaces</span></div>
+          <div className="line gap"><span className="ln"></span><span className="years"></span></div>
+          <div className="line"><span className="ln">{showNumber('09', true)}</span><span className="years"></span><h2 className="section-title section-title-muted">Work:</h2></div>
+          <div className="line"><span className="ln">{showNumber('10')}</span><span className="years"></span><span className="work-item"><span className="tree-branch">⎿</span> <a href="https://context.ai" className="company" target="_blank" rel="noopener noreferrer">Context</a>, Founding Designer <span className="years-inline">2025</span></span></div>
+          <div className="line"><span className="ln">{showNumber('11')}</span><span className="years"></span><span className="work-item"><span className="tree-branch">⎿</span> <span className="company">Various companies</span>, Independent Contractor <span className="years-inline">2021–2025</span></span></div>
+                  </div>
       </main>
       <section className="showcase-panel" ref={showcaseRef}>
         <ShowcaseSection />
       </section>
-      <ScrollSlider
-        containerRef={containerRef}
-        mainRef={mainRef}
-        showcaseRef={showcaseRef}
-      />
+      <ScrollSlider containerRef={containerRef} />
+      <div className="social-links-fixed">
+        <a href="mailto:jadroy77@gmail.com" className="social-box">Email</a>
+        <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer" className="social-box">Twitter</a>
+        <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer" className="social-box">LinkedIn</a>
+      </div>
     </div>
   );
 }

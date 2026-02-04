@@ -54,7 +54,7 @@ html::-webkit-scrollbar {
   :root {
     --content-padding-x: 32px;
     --line-number-width: 32px;
-    --showcase-card-height: 480px;
+    --showcase-card-height: 70vh;
   }
 }
 
@@ -62,7 +62,7 @@ html::-webkit-scrollbar {
   :root {
     --content-padding-x: 40px;
     --line-number-width: 36px;
-    --showcase-card-height: 60vh;
+    --showcase-card-height: 80vh;
     --content-offset: 80px;
   }
 }
@@ -70,7 +70,7 @@ html::-webkit-scrollbar {
 @media (min-width: 1280px) {
   :root {
     --line-number-width: 40px;
-    --showcase-card-height: 70vh;
+    --showcase-card-height: 85vh;
     --content-offset: calc(50vw - 750px);
   }
 }
@@ -158,19 +158,20 @@ main {
   display: flex;
   flex-direction: column;
   padding: var(--content-padding-y) var(--content-padding-x);
+  padding-top: 15vh;
   padding-right: 200px;
   width: 100vw;
   min-width: 100vw;
   box-sizing: border-box;
   height: 100vh;
-  justify-content: center;
+  justify-content: flex-start;
   flex-shrink: 0;
   position: relative;
 }
 
 @media (min-width: 1024px) {
   main {
-    padding-left: calc(50vw - 350px + var(--content-offset));
+    padding-left: calc(50vw - 450px + var(--content-offset));
     width: auto;
     min-width: 100vw;
   }
@@ -213,7 +214,7 @@ main {
 
 .line {
   display: grid;
-  grid-template-columns: var(--line-number-width) 1fr auto;
+  grid-template-columns: var(--line-number-width) var(--years-column-width, 6em) 1fr;
   align-items: baseline;
   line-height: var(--line-height, 1.22);
   min-height: calc(var(--base-font-size, 15px) * var(--line-height, 1.22));
@@ -250,6 +251,24 @@ main {
   color: var(--text);
 }
 
+.work-item {
+  color: var(--text);
+}
+
+.contact-item {
+  color: var(--text);
+}
+
+.contact-item a {
+  color: var(--text);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.contact-item a:hover {
+  color: var(--accent);
+}
+
 .tree-branch {
   color: var(--text-muted);
   font-size: 0.75em;
@@ -271,14 +290,23 @@ main {
   color: var(--text);
 }
 
-/* Social/Contact Links (legacy) */
-.social-links {
+/* Social/Contact Links */
+.social-links-fixed {
+  position: fixed;
+  bottom: 32px;
+  left: var(--content-padding-x);
   display: flex;
   gap: 8px;
-  margin-top: 4px;
+  z-index: 100;
 }
 
-.line .social-box {
+@media (min-width: 1024px) {
+  .social-links-fixed {
+    left: calc(50vw - 450px + var(--content-offset));
+  }
+}
+
+.social-box {
   color: var(--text-muted);
   text-decoration: none;
   letter-spacing: -0.01em;
@@ -291,7 +319,7 @@ main {
   align-items: center;
 }
 
-.line .social-box::after {
+.social-box::after {
   content: "↗";
   display: inline-block;
   max-width: 0;
@@ -301,13 +329,13 @@ main {
   overflow: hidden;
 }
 
-.line .social-box:hover {
+.social-box:hover {
   color: var(--text-muted);
   border-color: var(--text-muted);
   padding-right: 12px;
 }
 
-.line .social-box:hover::after {
+.social-box:hover::after {
   opacity: 1;
   max-width: 20px;
   margin-left: 6px;
@@ -741,11 +769,6 @@ main {
   gap: 0;
 }
 
-.company-row {
-  display: flex;
-  gap: 1em;
-}
-
 .company {
   color: var(--text);
   text-decoration: none;
@@ -772,6 +795,10 @@ a.company:hover {
 }
 
 .years {
+  color: hsl(0, 0%, 75%);
+}
+
+.years-inline {
   color: hsl(0, 0%, 75%);
 }
 
@@ -1574,75 +1601,39 @@ body.breathe-mode .convictions-list li {
   bottom: 32px;
   left: 50%;
   transform: translateX(-50%);
+  width: 200px;
+  height: 24px;
   border: 1px solid var(--text-muted);
-  padding: 12px 16px;
   background: var(--bg);
   z-index: 100;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 160px;
-}
-
-.scroll-slider-labels {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-}
-
-.scroll-slider-label {
-  font-family: inherit;
-  font-size: 11px;
-  color: var(--text-faint);
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: none;
-  transition: color 0.2s ease;
-  letter-spacing: -0.01em;
-}
-
-.scroll-slider-label:hover {
-  color: var(--text-muted);
-}
-
-.scroll-slider-label.active {
-  color: var(--text);
-}
-
-.scroll-slider-track {
-  height: 8px;
-  background: transparent;
-  border: 1px solid var(--text-faint);
-  position: relative;
   cursor: pointer;
+  overflow: hidden;
 }
 
 .scroll-slider-handle {
   position: absolute;
-  top: -1px;
+  top: 0;
   left: 0;
-  height: 8px;
-  min-width: 20px;
-  border: 1px solid var(--text-muted);
-  background: var(--bg);
+  height: 100%;
+  min-width: 40px;
+  background: var(--border);
+  border-right: 1px solid var(--text-muted);
+  border-left: 1px solid var(--text-muted);
   cursor: grab;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease;
 }
 
 .scroll-slider-handle:hover {
-  border-color: var(--text);
+  background: var(--text-faint);
 }
 
 .scroll-slider-handle.dragging {
   cursor: grabbing;
-  background: var(--border);
-  border-color: var(--text);
+  background: var(--text-faint);
 }
 
 @media (hover: none) and (pointer: coarse) {
-  .scroll-slider-label,
-  .scroll-slider-track,
+  .scroll-slider,
   .scroll-slider-handle {
     cursor: pointer;
   }
