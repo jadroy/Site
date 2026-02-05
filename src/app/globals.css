@@ -158,20 +158,20 @@ main {
   display: flex;
   flex-direction: column;
   padding: var(--content-padding-y) var(--content-padding-x);
-  padding-top: 15vh;
   padding-right: 200px;
   width: 100vw;
   min-width: 100vw;
   box-sizing: border-box;
   height: 100vh;
-  justify-content: flex-start;
+  justify-content: center;
   flex-shrink: 0;
   position: relative;
 }
 
 @media (min-width: 1024px) {
   main {
-    padding-left: calc(50vw - 450px + var(--content-offset));
+    padding-left: calc(6vw + 258px);
+    margin-top: -11px;
     width: auto;
     min-width: 100vw;
   }
@@ -214,7 +214,7 @@ main {
 
 .line {
   display: grid;
-  grid-template-columns: var(--line-number-width) var(--years-column-width, 6em) 1fr;
+  grid-template-columns: var(--line-number-width) 1fr;
   align-items: baseline;
   line-height: var(--line-height, 1.22);
   min-height: calc(var(--base-font-size, 15px) * var(--line-height, 1.22));
@@ -255,55 +255,15 @@ main {
   color: var(--text);
 }
 
-.contact-item {
-  color: var(--text);
-}
-
-.contact-item a {
-  color: var(--text);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.contact-item a:hover {
-  color: var(--accent);
-}
-
 .tree-branch {
   color: var(--text-muted);
   font-size: 0.75em;
 }
 
-/* Contact Links */
-.contact-links {
-  display: flex;
-  gap: 1.5em;
-}
-
-.contact-links a {
-  color: var(--text-muted);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.contact-links a:hover {
-  color: var(--text);
-}
-
 /* Social/Contact Links */
-.social-links-fixed {
-  position: fixed;
-  bottom: 32px;
-  left: var(--content-padding-x);
+.social-links {
   display: flex;
   gap: 8px;
-  z-index: 100;
-}
-
-@media (min-width: 1024px) {
-  .social-links-fixed {
-    left: calc(50vw - 450px + var(--content-offset));
-  }
 }
 
 .social-box {
@@ -331,7 +291,7 @@ main {
 
 .social-box:hover {
   color: var(--text-muted);
-  border-color: var(--text-muted);
+  border-color: hsl(0, 0%, 80%);
   padding-right: 12px;
 }
 
@@ -354,7 +314,7 @@ main {
   transition: color 0.2s ease;
 }
 
-.line a:hover {
+.line a:hover:not(.social-box) {
   color: var(--accent);
 }
 
@@ -774,8 +734,14 @@ main {
   text-decoration: none;
 }
 
+a.company {
+  position: relative;
+}
+
 a.company::after {
-  content: " \2197";
+  content: "\2197";
+  position: absolute;
+  margin-left: 0.3em;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -788,14 +754,6 @@ a.company:hover {
   color: var(--accent);
   text-shadow: none;
   opacity: 1;
-}
-
-.role {
-  color: var(--text-muted);
-}
-
-.years {
-  color: hsl(0, 0%, 75%);
 }
 
 .years-inline {
@@ -1595,6 +1553,66 @@ body.breathe-mode .convictions-list li {
   animation: drift 7s ease-in-out infinite 0.3s;
 }
 
+/* Design Grid Overlay */
+.design-grid {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9000;
+}
+
+.grid-line {
+  position: absolute;
+  background: rgba(0, 150, 255, 0.15);
+}
+
+.grid-line-v {
+  width: 1px;
+  height: 100%;
+  top: 0;
+}
+
+.grid-line-h {
+  height: 1px;
+  width: 100%;
+  left: 0;
+}
+
+.grid-line-golden {
+  background: rgba(255, 150, 0, 0.15);
+}
+
+.position-indicator {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  z-index: 9001;
+  background: var(--bg);
+  padding: 12px;
+  border: 1px solid var(--border);
+}
+
+.position-indicator button {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 4px 8px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.position-indicator button:hover {
+  border-color: var(--text-muted);
+}
+
 /* Scroll Slider */
 .scroll-slider {
   position: fixed;
@@ -1602,34 +1620,45 @@ body.breathe-mode .convictions-list li {
   left: 50%;
   transform: translateX(-50%);
   width: 200px;
-  height: 24px;
-  border: 1px solid var(--text-muted);
+  height: 20px;
   background: var(--bg);
+  border: 1px solid var(--text-muted);
   z-index: 100;
   cursor: pointer;
-  overflow: hidden;
+  animation: sliderEntrance 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both;
+}
+
+@keyframes sliderEntrance {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px) scaleY(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scaleY(1);
+  }
 }
 
 .scroll-slider-handle {
   position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  min-width: 40px;
+  top: -1px;
+  height: calc(100% + 2px);
+  min-width: 30px;
   background: var(--border);
-  border-right: 1px solid var(--text-muted);
-  border-left: 1px solid var(--text-muted);
+  border: 1px solid var(--text-muted);
   cursor: grab;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .scroll-slider-handle:hover {
   background: var(--text-faint);
+  border-color: var(--text);
 }
 
 .scroll-slider-handle.dragging {
   cursor: grabbing;
   background: var(--text-faint);
+  border-color: var(--text);
 }
 
 @media (hover: none) and (pointer: coarse) {

@@ -107,6 +107,48 @@ export default function Home() {
   const [gapSize, setGapSize] = useState(2.1);
   const [treeBranchSize, setTreeBranchSize] = useState(12);
 
+  // Draggable content position
+  const [contentOffset, setContentOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [showGrid, setShowGrid] = useState(true);
+  const dragStart = useRef({ x: 0, y: 0, offsetX: 0, offsetY: 0 });
+
+  const handleDragStart = (e: React.MouseEvent) => {
+    if (!e.shiftKey) return; // Hold shift to drag
+    e.preventDefault();
+    setIsDragging(true);
+    dragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      offsetX: contentOffset.x,
+      offsetY: contentOffset.y
+    };
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - dragStart.current.x;
+      const dy = e.clientY - dragStart.current.y;
+      setContentOffset({
+        x: dragStart.current.offsetX + dx,
+        y: dragStart.current.offsetY + dy
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
   // Hide controls
   const [showControls, setShowControls] = useState(true);
 
@@ -170,6 +212,33 @@ export default function Home() {
 
   return (
     <div className="horizontal-scroll-container" ref={containerRef}>
+      {/* Design Grid Overlay */}
+      {showGrid && showControls && (
+        <div className="design-grid">
+          {/* Rule of thirds - vertical */}
+          <div className="grid-line grid-line-v" style={{ left: '33.33%' }} />
+          <div className="grid-line grid-line-v" style={{ left: '50%' }} />
+          <div className="grid-line grid-line-v" style={{ left: '66.66%' }} />
+          {/* Rule of thirds - horizontal */}
+          <div className="grid-line grid-line-h" style={{ top: '33.33%' }} />
+          <div className="grid-line grid-line-h" style={{ top: '50%' }} />
+          <div className="grid-line grid-line-h" style={{ top: '66.66%' }} />
+          {/* Golden ratio guides */}
+          <div className="grid-line grid-line-v grid-line-golden" style={{ left: '38.2%' }} />
+          <div className="grid-line grid-line-v grid-line-golden" style={{ left: '61.8%' }} />
+          <div className="grid-line grid-line-h grid-line-golden" style={{ top: '38.2%' }} />
+          <div className="grid-line grid-line-h grid-line-golden" style={{ top: '61.8%' }} />
+        </div>
+      )}
+
+      {/* Position indicator */}
+      {showControls && (
+        <div className="position-indicator">
+          <span>x: {contentOffset.x}px | y: {contentOffset.y}px</span>
+          <button onClick={() => setShowGrid(!showGrid)}>{showGrid ? 'Hide' : 'Show'} Grid</button>
+          <span style={{ opacity: 0.5, fontSize: '10px' }}>Hold Shift + drag to move</span>
+        </div>
+      )}
       {/* Global fixed nav - left corner */}
       <div className="global-nav global-nav-left">
         {currentSection !== 'home' && (
@@ -224,37 +293,46 @@ export default function Home() {
         </span>
       </div>}
 
-      <main ref={mainRef} style={{
+      <main
+        ref={mainRef}
+        onMouseDown={handleDragStart}
+        style={{
           '--content-max-width': `${contentWidth}px`,
           '--base-font-size': `${fontSize}px`,
           '--line-height': lineHeight,
           '--gap-multiplier': gapSize,
-          '--tree-branch-size': `${treeBranchSize}px`
+          '--tree-branch-size': `${treeBranchSize}px`,
+          transform: `translate(${contentOffset.x}px, ${contentOffset.y}px)`,
+          cursor: isDragging ? 'grabbing' : undefined
         } as React.CSSProperties}>
         <div className="main-content">
-          <div className="line"><span className="ln">{showNumber('01')}</span><span className="years"></span><h1 className={`name ${isScrambling ? "name-scrambling" : ""}`} onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}>{chars.map((c, i) => (<span key={i} style={{ opacity: c.opacity }}>{c.char}</span>))}:</h1></div>
-          <div className="line"><span className="ln">{showNumber('02')}</span><span className="years"></span><span className="location"><span className="tree-branch">⎿</span> San Francisco</span></div>
-          <div className="line"><span className="ln">{showNumber('03')}</span><span className="years"></span><span className="about"><span className="tree-branch">⎿</span> Creative technologist, currently tinkering with e-ink interfaces and making stuff I'd like to exist.</span></div>
-          <div className="line gap"><span className="ln"></span><span className="years"></span></div>
-          <div className="line"><span className="ln">{showNumber('05', true)}</span><span className="years"></span><h2 className="section-title section-title-muted">Convictions:</h2></div>
-          <div className="line"><span className="ln">{showNumber('06')}</span><span className="years"></span><span className="conviction-item"><span className="tree-branch">⎿</span> Self-driving cars are necessary</span></div>
-          <div className="line"><span className="ln">{showNumber('07')}</span><span className="years"></span><span className="conviction-item"><span className="tree-branch">⎿</span> Clarity and intentionality are core to a good life</span></div>
-          <div className="line"><span className="ln">{showNumber('08')}</span><span className="years"></span><span className="conviction-item"><span className="tree-branch">⎿</span> Spatial computing is the future of interfaces</span></div>
-          <div className="line gap"><span className="ln"></span><span className="years"></span></div>
-          <div className="line"><span className="ln">{showNumber('09', true)}</span><span className="years"></span><h2 className="section-title section-title-muted">Work:</h2></div>
-          <div className="line"><span className="ln">{showNumber('10')}</span><span className="years"></span><span className="work-item"><span className="tree-branch">⎿</span> <a href="https://context.ai" className="company" target="_blank" rel="noopener noreferrer">Context</a>, Founding Designer <span className="years-inline">2025</span></span></div>
-          <div className="line"><span className="ln">{showNumber('11')}</span><span className="years"></span><span className="work-item"><span className="tree-branch">⎿</span> <span className="company">Various companies</span>, Independent Contractor <span className="years-inline">2021–2025</span></span></div>
-                  </div>
+          <div className="line"><span className="ln">{showNumber('01')}</span><h1 className={`name ${isScrambling ? "name-scrambling" : ""}`} onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}>{chars.map((c, i) => (<span key={i} style={{ opacity: c.opacity }}>{c.char}</span>))}:</h1></div>
+          <div className="line"><span className="ln">{showNumber('02')}</span><span className="location"><span className="tree-branch">⎿</span> San Francisco</span></div>
+          <div className="line"><span className="ln">{showNumber('03')}</span><span className="about"><span className="tree-branch">⎿</span> Creative technologist, currently tinkering with e-ink interfaces and making stuff I'd like to exist.</span></div>
+          <div className="line gap"><span className="ln"></span></div>
+          <div className="line"><span className="ln">{showNumber('05', true)}</span><h2 className="section-title section-title-muted">Convictions:</h2></div>
+          <div className="line"><span className="ln">{showNumber('06')}</span><span className="conviction-item"><span className="tree-branch">⎿</span> Self-driving cars are necessary</span></div>
+          <div className="line"><span className="ln">{showNumber('07')}</span><span className="conviction-item"><span className="tree-branch">⎿</span> Clarity and intentionality are core to a good life</span></div>
+          <div className="line"><span className="ln">{showNumber('08')}</span><span className="conviction-item"><span className="tree-branch">⎿</span> Spatial computing is the future of interfaces</span></div>
+          <div className="line gap"><span className="ln"></span></div>
+          <div className="line"><span className="ln">{showNumber('09', true)}</span><h2 className="section-title section-title-muted">Work:</h2></div>
+          <div className="line"><span className="ln">{showNumber('10')}</span><span className="work-item"><span className="tree-branch">⎿</span> <a href="https://context.ai" className="company" target="_blank" rel="noopener noreferrer">Context</a>, Founding Designer <span className="years-inline">2025</span></span></div>
+          <div className="line"><span className="ln">{showNumber('11')}</span><span className="work-item"><span className="tree-branch">⎿</span> <span className="company">Various companies</span>, Independent Contractor <span className="years-inline">2021–2025</span></span></div>
+          <div className="line gap"><span className="ln"></span></div>
+          <div className="line">
+            <span className="ln">{showNumber('12')}</span>
+            <div className="social-links">
+              <a href="mailto:jadroy77@gmail.com" className="social-box">Email</a>
+              <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer" className="social-box">Twitter</a>
+              <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer" className="social-box">LinkedIn</a>
+            </div>
+          </div>
+        </div>
       </main>
       <section className="showcase-panel" ref={showcaseRef}>
         <ShowcaseSection />
       </section>
-      <ScrollSlider containerRef={containerRef} />
-      <div className="social-links-fixed">
-        <a href="mailto:jadroy77@gmail.com" className="social-box">Email</a>
-        <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer" className="social-box">Twitter</a>
-        <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer" className="social-box">LinkedIn</a>
-      </div>
+      <ScrollSlider />
     </div>
   );
 }

@@ -1,174 +1,136 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback, RefObject } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 
-interface ScrollSliderProps {
-  containerRef: RefObject<HTMLDivElement | null>;
-}
-
-export default function ScrollSlider({ containerRef }: ScrollSliderProps) {
+export default function ScrollSlider() {
   const trackRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [handleWidth, setHandleWidth] = useState(40);
-  const [handleLeft, setHandleLeft] = useState(0);
+  const [metrics, setMetrics] = useState({ handleWidth: 50, handleLeft: 0 });
 
-  const updateSlider = useCallback(() => {
-    if (!trackRef.current || !containerRef.current) return;
+  const getScrollMetrics = useCallback(() => {
+    const container = document.querySelector(".horizontal-scroll-container");
+    if (!container || !trackRef.current) return null;
 
-    const scrollX = window.scrollX;
-    const totalWidth = containerRef.current.scrollWidth;
+    const totalWidth = container.scrollWidth;
     const viewportWidth = window.innerWidth;
+    const scrollX = window.scrollX || document.documentElement.scrollLeft || document.body.scrollLeft;
     const trackWidth = trackRef.current.offsetWidth;
-
-    // Only update if there's actual horizontal scroll
-    if (totalWidth <= viewportWidth) return;
-
-    // Handle width proportional to viewport/total
-    const ratio = viewportWidth / totalWidth;
-    const newHandleWidth = Math.max(40, ratio * trackWidth);
-    setHandleWidth(newHandleWidth);
-
-    // Handle position
     const maxScroll = totalWidth - viewportWidth;
-    const scrollPercent = maxScroll > 0 ? scrollX / maxScroll : 0;
-    const maxHandleLeft = trackWidth - newHandleWidth;
-    setHandleLeft(scrollPercent * maxHandleLeft);
-  }, [containerRef]);
 
-  // Initial setup and scroll sync
+    return { totalWidth, viewportWidth, scrollX, trackWidth, maxScroll };
+  }, []);
+
+  const updateHandle = useCallback(() => {
+    const m = getScrollMetrics();
+    if (!m || m.maxScroll <= 0) return;
+
+    const ratio = m.viewportWidth / m.totalWidth;
+    const handleWidth = Math.max(30, ratio * m.trackWidth);
+    const scrollPercent = m.scrollX / m.maxScroll;
+    const handleLeft = scrollPercent * (m.trackWidth - handleWidth);
+
+    setMetrics({ handleWidth, handleLeft });
+  }, [getScrollMetrics]);
+
+  // Initialize and listen to scroll
   useEffect(() => {
-    // Wait for layout to be ready
-    const initTimeout = setTimeout(updateSlider, 200);
+    updateHandle();
+    const timers = [
+      setTimeout(updateHandle, 50),
+      setTimeout(updateHandle, 200),
+      setTimeout(updateHandle, 500),
+      setTimeout(updateHandle, 1000),
+    ];
 
     const onScroll = () => {
-      if (!isDragging) {
-        requestAnimationFrame(updateSlider);
-      }
+      if (!isDragging) requestAnimationFrame(updateHandle);
     };
 
+    window.addEventListener("scroll", onScroll);
     document.addEventListener("scroll", onScroll, true);
-    window.addEventListener("resize", updateSlider);
+    window.addEventListener("resize", updateHandle);
 
     return () => {
-      clearTimeout(initTimeout);
+      timers.forEach(clearTimeout);
+      window.removeEventListener("scroll", onScroll);
       document.removeEventListener("scroll", onScroll, true);
-      window.removeEventListener("resize", updateSlider);
+      window.removeEventListener("resize", updateHandle);
     };
-  }, [isDragging, updateSlider]);
+  }, [isDragging, updateHandle]);
 
-  // Click on track to scroll
-  const onTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!trackRef.current || !containerRef.current) return;
+  const scrollTo = useCallback((percent: number) => {
+    const m = getScrollMetrics();
+    if (!m || m.maxScroll <= 0) return;
+
+    const target = percent * m.maxScroll;
+    document.documentElement.scrollLeft = target;
+    document.body.scrollLeft = target;
+  }, [getScrollMetrics]);
+
+  // Click track
+  const onTrackClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).classList.contains("scroll-slider-handle")) return;
+    if (!trackRef.current) return;
 
     const rect = trackRef.current.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const trackWidth = rect.width;
-
-    const totalWidth = containerRef.current.scrollWidth;
-    const viewportWidth = window.innerWidth;
-    const maxScroll = totalWidth - viewportWidth;
-
-    const targetScroll = (clickX / trackWidth) * maxScroll;
-    window.scrollTo({ left: targetScroll, behavior: "smooth" });
+    const clickPercent = (e.clientX - rect.left) / rect.width;
+    scrollTo(Math.max(0, Math.min(1, clickPercent)));
   };
 
-  // Drag start
-  const onHandleMouseDown = (e: React.MouseEvent) => {
+  // Drag
+  const startDrag = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
   };
 
-  // Mouse drag
   useEffect(() => {
     if (!isDragging) return;
 
-    const onMouseMove = (e: MouseEvent) => {
-      if (!trackRef.current || !containerRef.current) return;
-
+    const onMove = (clientX: number) => {
+      if (!trackRef.current) return;
       const rect = trackRef.current.getBoundingClientRect();
       const trackWidth = rect.width;
-      const relativeX = e.clientX - rect.left - handleWidth / 2;
-      const clampedX = Math.max(0, Math.min(relativeX, trackWidth - handleWidth));
+      const percent = (clientX - rect.left - metrics.handleWidth / 2) / (trackWidth - metrics.handleWidth);
+      const clamped = Math.max(0, Math.min(1, percent));
 
-      const totalWidth = containerRef.current.scrollWidth;
-      const viewportWidth = window.innerWidth;
-      const maxScroll = totalWidth - viewportWidth;
-      const scrollPercent = clampedX / (trackWidth - handleWidth);
-
-      window.scrollTo({ left: scrollPercent * maxScroll });
-      setHandleLeft(clampedX);
+      scrollTo(clamped);
+      setMetrics(prev => ({
+        ...prev,
+        handleLeft: clamped * (trackWidth - prev.handleWidth)
+      }));
     };
 
-    const onMouseUp = () => {
+    const onMouseMove = (e: MouseEvent) => onMove(e.clientX);
+    const onTouchMove = (e: TouchEvent) => onMove(e.touches[0].clientX);
+    const onEnd = () => {
       setIsDragging(false);
-      updateSlider();
+      updateHandle();
     };
 
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchend", onEnd);
 
     return () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchend", onEnd);
     };
-  }, [isDragging, handleWidth, containerRef, updateSlider]);
-
-  // Touch drag
-  const onHandleTouchStart = (e: React.TouchEvent) => {
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (!trackRef.current || !containerRef.current) return;
-
-      const rect = trackRef.current.getBoundingClientRect();
-      const trackWidth = rect.width;
-      const relativeX = e.touches[0].clientX - rect.left - handleWidth / 2;
-      const clampedX = Math.max(0, Math.min(relativeX, trackWidth - handleWidth));
-
-      const totalWidth = containerRef.current.scrollWidth;
-      const viewportWidth = window.innerWidth;
-      const maxScroll = totalWidth - viewportWidth;
-      const scrollPercent = clampedX / (trackWidth - handleWidth);
-
-      window.scrollTo({ left: scrollPercent * maxScroll });
-      setHandleLeft(clampedX);
-    };
-
-    const onTouchEnd = () => {
-      setIsDragging(false);
-      updateSlider();
-    };
-
-    document.addEventListener("touchmove", onTouchMove, { passive: true });
-    document.addEventListener("touchend", onTouchEnd);
-
-    return () => {
-      document.removeEventListener("touchmove", onTouchMove);
-      document.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [isDragging, handleWidth, containerRef, updateSlider]);
+  }, [isDragging, metrics.handleWidth, scrollTo, updateHandle]);
 
   return (
-    <div
-      ref={trackRef}
-      className="scroll-slider"
-      onClick={onTrackClick}
-    >
+    <div ref={trackRef} className="scroll-slider" onClick={onTrackClick}>
       <div
         className={`scroll-slider-handle ${isDragging ? "dragging" : ""}`}
         style={{
-          width: handleWidth,
-          left: handleLeft,
+          width: metrics.handleWidth,
+          left: metrics.handleLeft,
         }}
-        onMouseDown={onHandleMouseDown}
-        onTouchStart={onHandleTouchStart}
+        onMouseDown={startDrag}
+        onTouchStart={startDrag}
       />
     </div>
   );
