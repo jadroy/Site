@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import ShowcaseSection from "./components/ShowcaseSection";
 import ScrollSlider from "./components/ScrollSlider";
+import StatusBar from "./components/StatusBar";
 
 type CharData = { char: string; opacity: number };
 
@@ -101,14 +102,13 @@ export default function Home() {
   const [numberingMode, setNumberingMode] = useState<NumberingMode>('none');
 
   // Layout sliders
-  const [contentWidth, setContentWidth] = useState(700);
   const [fontSize, setFontSize] = useState(15);
   const [lineHeight, setLineHeight] = useState(1.25);
   const [gapSize, setGapSize] = useState(2.1);
   const [treeBranchSize, setTreeBranchSize] = useState(12);
 
   // Draggable content position
-  const [contentOffset, setContentOffset] = useState({ x: 0, y: 0 });
+  const [contentOffset, setContentOffset] = useState({ x: 0, y: 0 }); // Fine-tune with Shift+drag
   const [isDragging, setIsDragging] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
   const dragStart = useRef({ x: 0, y: 0, offsetX: 0, offsetY: 0 });
@@ -150,13 +150,21 @@ export default function Home() {
   }, [isDragging]);
 
   // Hide controls
-  const [showControls, setShowControls] = useState(true);
+  const [showControls, setShowControls] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === '.' && e.metaKey) {
         e.preventDefault();
         setShowControls(prev => !prev);
+      }
+      if (e.key === 'Escape') {
+        document.body.style.cursor = 'auto';
+      }
+      if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault();
+        const amount = e.key === 'ArrowRight' ? 400 : -400;
+        window.scrollBy({ left: amount, behavior: 'instant' });
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -212,22 +220,19 @@ export default function Home() {
 
   return (
     <div className="horizontal-scroll-container" ref={containerRef}>
-      {/* Design Grid Overlay */}
+      <StatusBar currentSection={currentSection} />
+      {/* 12-Column Grid Overlay */}
       {showGrid && showControls && (
         <div className="design-grid">
-          {/* Rule of thirds - vertical */}
-          <div className="grid-line grid-line-v" style={{ left: '33.33%' }} />
-          <div className="grid-line grid-line-v" style={{ left: '50%' }} />
-          <div className="grid-line grid-line-v" style={{ left: '66.66%' }} />
-          {/* Rule of thirds - horizontal */}
-          <div className="grid-line grid-line-h" style={{ top: '33.33%' }} />
-          <div className="grid-line grid-line-h" style={{ top: '50%' }} />
-          <div className="grid-line grid-line-h" style={{ top: '66.66%' }} />
-          {/* Golden ratio guides */}
-          <div className="grid-line grid-line-v grid-line-golden" style={{ left: '38.2%' }} />
-          <div className="grid-line grid-line-v grid-line-golden" style={{ left: '61.8%' }} />
-          <div className="grid-line grid-line-h grid-line-golden" style={{ top: '38.2%' }} />
-          <div className="grid-line grid-line-h grid-line-golden" style={{ top: '61.8%' }} />
+          <div className="design-grid-columns">
+            {[...Array(12)].map((_, i) => (
+              <div key={i} className="design-grid-column">
+                <span className="design-grid-column-number">{i + 1}</span>
+              </div>
+            ))}
+          </div>
+          {/* Center line */}
+          <div className="grid-line grid-line-v grid-line-center" style={{ left: '50%' }} />
         </div>
       )}
 
@@ -239,6 +244,15 @@ export default function Home() {
           <span style={{ opacity: 0.5, fontSize: '10px' }}>Hold Shift + drag to move</span>
         </div>
       )}
+
+      {/* Controls toggle button - always visible */}
+      <button
+        className={`controls-toggle ${showControls ? 'active' : ''}`}
+        onClick={() => setShowControls(prev => !prev)}
+        title={showControls ? 'Hide controls (⌘.)' : 'Show controls (⌘.)'}
+      >
+        <span className="controls-toggle-icon" />
+      </button>
       {/* Global fixed nav - left corner */}
       <div className="global-nav global-nav-left">
         {currentSection !== 'home' && (
@@ -260,17 +274,13 @@ export default function Home() {
       </div>
 
 
+
       {/* Line numbering toggle */}
       {showControls && <div className="numbering-toggle">
         <button onClick={() => setNumberingMode('none')} className={numberingMode === 'none' ? 'active' : ''}>None</button>
         <button onClick={() => setNumberingMode('numbers')} className={numberingMode === 'numbers' ? 'active' : ''}>Numbers</button>
         <button onClick={() => setNumberingMode('slashes')} className={numberingMode === 'slashes' ? 'active' : ''}>//</button>
         <button onClick={() => setNumberingMode('header-slashes')} className={numberingMode === 'header-slashes' ? 'active' : ''}>// Headers</button>
-        <span className="width-slider">
-          <span className="slider-label">W</span>
-          <input type="range" min="400" max="700" value={contentWidth} onChange={(e) => setContentWidth(Number(e.target.value))} />
-          <span className="width-value">{contentWidth}</span>
-        </span>
         <span className="width-slider">
           <span className="slider-label">Font</span>
           <input type="range" min="12" max="20" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} />
@@ -297,7 +307,6 @@ export default function Home() {
         ref={mainRef}
         onMouseDown={handleDragStart}
         style={{
-          '--content-max-width': `${contentWidth}px`,
           '--base-font-size': `${fontSize}px`,
           '--line-height': lineHeight,
           '--gap-multiplier': gapSize,
@@ -305,7 +314,7 @@ export default function Home() {
           transform: `translate(${contentOffset.x}px, ${contentOffset.y}px)`,
           cursor: isDragging ? 'grabbing' : undefined
         } as React.CSSProperties}>
-        <div className="main-content">
+        <div className="main-content intro-fade grid-col-11 grid-start-1 lg:grid-start-2 lg:grid-col-6">
           <div className="line"><span className="ln">{showNumber('01')}</span><h1 className={`name ${isScrambling ? "name-scrambling" : ""}`} onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}>{chars.map((c, i) => (<span key={i} style={{ opacity: c.opacity }}>{c.char}</span>))}:</h1></div>
           <div className="line"><span className="ln">{showNumber('02')}</span><span className="location"><span className="tree-branch">⎿</span> San Francisco</span></div>
           <div className="line"><span className="ln">{showNumber('03')}</span><span className="about"><span className="tree-branch">⎿</span> Creative technologist, currently tinkering with e-ink interfaces and making stuff I'd like to exist.</span></div>

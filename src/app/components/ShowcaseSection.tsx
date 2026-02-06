@@ -9,6 +9,8 @@ const humanoidImages = [
 const contextImages = [
   { src: "/Context landing hero.png", alt: "Context Landing Hero", type: "image" },
   { src: "/Landing Hero.png", alt: "Context Landing Hero 2", type: "image" },
+  { src: "/Context/Context landing hero fade in.mp4", alt: "Context Landing Hero Fade In", type: "video" },
+  { src: "/Context/Context landing page walk through.mp4", alt: "Context Landing Page Walk Through", type: "video" },
 ];
 
 const shareImages = [
@@ -54,8 +56,9 @@ export default function ShowcaseSection() {
       {/* Humanoid Index Section */}
       <div className="showcase-with-lines">
         <div className="showcase-lines-content">
-          <div className="line"><span className="ln">01</span><span className="content">Humanoid Index</span></div>
-          <div className="line"><span className="ln">02</span><span className="role">Product Design</span></div>
+          <div className="showcase-line"><span className="content">Humanoid Index</span></div>
+          <div className="showcase-line"><span className="tree-branch">⎿</span> <a href="https://humanoid-index.com" target="_blank" rel="noopener noreferrer" className="showcase-link">humanoid-index.com</a></div>
+          <div className="showcase-line"><span className="tree-branch">⎿</span> I curated a list of humanoid robots</div>
         </div>
         <div className="showcase-cards-horizontal">
           {humanoidImages.map((item, index) => (
@@ -69,8 +72,12 @@ export default function ShowcaseSection() {
       {/* Context Section */}
       <div className="showcase-with-lines">
         <div className="showcase-lines-content">
-          <div className="line"><span className="ln">01</span><span className="content">Context</span></div>
-          <div className="line"><span className="ln">02</span><span className="role">Founding Designer</span></div>
+          <div className="showcase-line"><span className="content">Context</span></div>
+          <div className="showcase-line"><span className="tree-branch">⎿</span> Founding Designer</div>
+          <div className="showcase-line"><span className="tree-branch">⎿</span> <a href="https://context.ai" target="_blank" rel="noopener noreferrer" className="showcase-link">context.ai</a></div>
+          <div className="showcase-line"><span className="tree-branch">⎿</span> 70 teams onboarded</div>
+          <div className="showcase-line"><span className="tree-branch">⎿</span> 50k+ hours saved per team/month</div>
+          <div className="showcase-line"><span className="tree-branch">⎿</span> 38% conversion (2x US)</div>
         </div>
         <div className="showcase-cards-horizontal">
           {contextImages.map((item, index) => (
@@ -84,8 +91,8 @@ export default function ShowcaseSection() {
       {/* Share Animation Section */}
       <div className="showcase-with-lines">
         <div className="showcase-lines-content">
-          <div className="line"><span className="ln">01</span><span className="content">Share</span></div>
-          <div className="line"><span className="ln">02</span><span className="role">Animation</span></div>
+          <div className="showcase-line"><span className="content">Share</span></div>
+          <div className="showcase-line"><span className="tree-branch">⎿</span> What if your phone knew when to share your work?</div>
         </div>
         <div className="showcase-cards-horizontal">
           {shareImages.map((item, index) => (

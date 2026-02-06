@@ -3,7 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { JetBrains_Mono, Fira_Code, Source_Code_Pro, IBM_Plex_Mono, Space_Mono, Inconsolata, Roboto_Mono, Ubuntu_Mono, Anonymous_Pro, Cousine } from "next/font/google";
 import "./globals.css";
-import Crosshair from "./components/Crosshair";
+// import Crosshair from "./components/Crosshair";
 // import FontSwitcher from "./components/FontSwitcher";
 
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono", weight: ["300", "400"] });
@@ -30,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${GeistSans.variable} ${GeistMono.variable} ${jetbrainsMono.variable} ${firaCode.variable} ${sourceCodePro.variable} ${ibmPlexMono.variable} ${spaceMono.variable} ${inconsolata.variable} ${robotoMono.variable} ${ubuntuMono.variable} ${anonymousPro.variable} ${cousine.variable}`}>
-        <Crosshair />
+        {/* <Crosshair /> */}
         {/* <FontSwitcher /> */}
         {children}
       </body>
