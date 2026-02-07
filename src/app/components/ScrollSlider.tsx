@@ -7,48 +7,56 @@ const sections = [
   { id: "work", label: "Work" },
 ];
 
-export default function ScrollSlider() {
+export default function ScrollSlider({ vertical = false }: { vertical?: boolean }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [metrics, setMetrics] = useState({ handleWidth: 50, handleLeft: 0 });
+  const [metrics, setMetrics] = useState({ handleSize: 50, handleOffset: 0 });
   const [sectionPositions, setSectionPositions] = useState<{ id: string; percent: number }[]>([]);
 
   const getScrollMetrics = useCallback(() => {
     if (!trackRef.current) return null;
 
-    // Try multiple ways to get total width
     const container = document.querySelector(".horizontal-scroll-container") as HTMLElement;
     const html = document.documentElement;
     const body = document.body;
 
-    const totalWidth = Math.max(
+    if (vertical) {
+      const totalHeight = Math.max(html.scrollHeight, body.scrollHeight);
+      const viewportHeight = window.innerHeight;
+      const scrollY = window.scrollY;
+      const trackSize = trackRef.current.offsetHeight;
+      const maxScroll = totalHeight - viewportHeight;
+      return { totalSize: totalHeight, viewportSize: viewportHeight, scrollPos: scrollY, trackSize, maxScroll };
+    }
+
+    const totalSize = Math.max(
       container?.scrollWidth || 0,
       html.scrollWidth,
       body.scrollWidth
     );
-    const viewportWidth = window.innerWidth;
-    const scrollX = Math.max(window.scrollX, html.scrollLeft, body.scrollLeft);
-    const trackWidth = trackRef.current.offsetWidth;
-    const maxScroll = totalWidth - viewportWidth;
+    const viewportSize = window.innerWidth;
+    const scrollPos = Math.max(window.scrollX, html.scrollLeft, body.scrollLeft);
+    const trackSize = trackRef.current.offsetWidth;
+    const maxScroll = totalSize - viewportSize;
 
-    return { totalWidth, viewportWidth, scrollX, trackWidth, maxScroll };
-  }, []);
+    return { totalSize, viewportSize, scrollPos, trackSize, maxScroll };
+  }, [vertical]);
 
   const updateHandle = useCallback(() => {
     const m = getScrollMetrics();
     if (!m) return;
 
     if (m.maxScroll <= 0) {
-      setMetrics({ handleWidth: m.trackWidth, handleLeft: 0 });
+      setMetrics({ handleSize: m.trackSize, handleOffset: 0 });
       return;
     }
 
-    const ratio = m.viewportWidth / m.totalWidth;
-    const handleWidth = Math.max(30, ratio * m.trackWidth);
-    const scrollPercent = m.scrollX / m.maxScroll;
-    const handleLeft = scrollPercent * (m.trackWidth - handleWidth);
+    const ratio = m.viewportSize / m.totalSize;
+    const handleSize = Math.max(30, ratio * m.trackSize);
+    const scrollPercent = m.scrollPos / m.maxScroll;
+    const handleOffset = scrollPercent * (m.trackSize - handleSize);
 
-    setMetrics({ handleWidth, handleLeft });
+    setMetrics({ handleSize, handleOffset });
   }, [getScrollMetrics]);
 
   const updateSectionPositions = useCallback(() => {
@@ -64,12 +72,17 @@ export default function ScrollSlider() {
       positions.push({ id: "home", percent: 0 });
     }
     if (showcase) {
-      const showcaseLeft = (showcase as HTMLElement).offsetLeft;
-      positions.push({ id: "work", percent: showcaseLeft / m.totalWidth });
+      if (vertical) {
+        const showcaseTop = (showcase as HTMLElement).offsetTop;
+        positions.push({ id: "work", percent: showcaseTop / m.totalSize });
+      } else {
+        const showcaseLeft = (showcase as HTMLElement).offsetLeft;
+        positions.push({ id: "work", percent: showcaseLeft / m.totalSize });
+      }
     }
 
     setSectionPositions(positions);
-  }, [getScrollMetrics]);
+  }, [getScrollMetrics, vertical]);
 
   useEffect(() => {
     updateHandle();
@@ -105,11 +118,14 @@ export default function ScrollSlider() {
     if (!m || m.maxScroll <= 0) return;
 
     const target = Math.round(percent * m.maxScroll);
-    // Try all methods
-    window.scrollTo(target, 0);
-    document.documentElement.scrollLeft = target;
-    document.body.scrollLeft = target;
-  }, [getScrollMetrics]);
+    if (vertical) {
+      window.scrollTo(0, target);
+    } else {
+      window.scrollTo(target, 0);
+      document.documentElement.scrollLeft = target;
+      document.body.scrollLeft = target;
+    }
+  }, [getScrollMetrics, vertical]);
 
   const onTrackClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).classList.contains("scroll-slider-handle")) return;
@@ -117,7 +133,9 @@ export default function ScrollSlider() {
     if (!trackRef.current) return;
 
     const rect = trackRef.current.getBoundingClientRect();
-    const clickPercent = (e.clientX - rect.left) / rect.width;
+    const clickPercent = vertical
+      ? (e.clientY - rect.top) / rect.height
+      : (e.clientX - rect.left) / rect.width;
     scrollTo(Math.max(0, Math.min(1, clickPercent)));
   };
 
@@ -137,22 +155,23 @@ export default function ScrollSlider() {
   useEffect(() => {
     if (!isDragging) return;
 
-    const onMove = (clientX: number) => {
+    const onMove = (clientPos: number) => {
       if (!trackRef.current) return;
       const rect = trackRef.current.getBoundingClientRect();
-      const trackWidth = rect.width;
-      const percent = (clientX - rect.left - metrics.handleWidth / 2) / (trackWidth - metrics.handleWidth);
+      const trackSize = vertical ? rect.height : rect.width;
+      const offset = vertical ? (clientPos - rect.top) : (clientPos - rect.left);
+      const percent = (offset - metrics.handleSize / 2) / (trackSize - metrics.handleSize);
       const clamped = Math.max(0, Math.min(1, percent));
 
       scrollTo(clamped);
       setMetrics(prev => ({
         ...prev,
-        handleLeft: clamped * (trackWidth - prev.handleWidth)
+        handleOffset: clamped * (trackSize - prev.handleSize)
       }));
     };
 
-    const onMouseMove = (e: MouseEvent) => onMove(e.clientX);
-    const onTouchMove = (e: TouchEvent) => onMove(e.touches[0].clientX);
+    const onMouseMove = (e: MouseEvent) => onMove(vertical ? e.clientY : e.clientX);
+    const onTouchMove = (e: TouchEvent) => onMove(vertical ? e.touches[0].clientY : e.touches[0].clientX);
     const onEnd = () => {
       setIsDragging(false);
       updateHandle();
@@ -169,10 +188,14 @@ export default function ScrollSlider() {
       window.removeEventListener("mouseup", onEnd);
       window.removeEventListener("touchend", onEnd);
     };
-  }, [isDragging, metrics.handleWidth, scrollTo, updateHandle]);
+  }, [isDragging, metrics.handleSize, scrollTo, updateHandle, vertical]);
+
+  const handleStyle = vertical
+    ? { height: metrics.handleSize, top: metrics.handleOffset }
+    : { width: metrics.handleSize, left: metrics.handleOffset };
 
   return (
-    <div ref={trackRef} className="scroll-slider" onClick={onTrackClick}>
+    <div ref={trackRef} className={`scroll-slider ${vertical ? 'scroll-slider-vertical' : ''}`} onClick={onTrackClick}>
       <div className="scroll-slider-sections">
         {sections.map((section) => (
           <span
@@ -186,10 +209,7 @@ export default function ScrollSlider() {
       </div>
       <div
         className={`scroll-slider-handle ${isDragging ? "dragging" : ""}`}
-        style={{
-          width: metrics.handleWidth,
-          left: metrics.handleLeft,
-        }}
+        style={handleStyle}
         onMouseDown={startDrag}
         onTouchStart={startDrag}
       />

@@ -27,15 +27,13 @@ const shareImages = [
 const photosImages: { src: string; alt: string; type: string }[] = [
 ];
 
-const doorknobImages = [
+const irlImages = [
   { src: "/New doorknob/ABB6539D-6BC7-402E-A838-A11E432C84B8_1_105_c.jpeg", alt: "New Doorknob", type: "image" },
   { src: "/New doorknob/1EC092C6-8BF8-40BF-B9B3-A8D76017C2B4_1_105_c.jpeg", alt: "New Doorknob", type: "image" },
+  { src: "/Esp32-weatherdisplay/B83BE970-9380-4464-A007-CD0E7A8B7CD2_1_105_c.jpeg", alt: "ESP32 E-Ink Weather Display", type: "image", objectPosition: "center bottom" },
 ];
 
-const esp32Images: { src: string; alt: string; type: string }[] = [
-];
-
-function ShowcaseCard({ item }: { item: { src: string; alt: string; type: string; playbackRate?: number; scale?: number } }) {
+function ShowcaseCard({ item }: { item: { src: string; alt: string; type: string; playbackRate?: number; scale?: number; objectPosition?: string } }) {
   return item.type === "video" ? (
     <div className="showcase-card">
       <video
@@ -55,7 +53,7 @@ function ShowcaseCard({ item }: { item: { src: string; alt: string; type: string
   ) : (
     <div className="showcase-card">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={item.src} alt={item.alt} />
+      <img src={item.src} alt={item.alt} style={item.objectPosition ? { objectPosition: item.objectPosition } : undefined} />
     </div>
   );
 }
@@ -63,7 +61,7 @@ function ShowcaseCard({ item }: { item: { src: string; alt: string; type: string
 type SectionData = {
   title: string;
   lines: React.ReactNode[];
-  items: { src: string; alt: string; type: string; playbackRate?: number; scale?: number }[];
+  items: { src: string; alt: string; type: string; playbackRate?: number; scale?: number; objectPosition?: string }[];
 };
 
 const sections: SectionData[] = [
@@ -91,19 +89,12 @@ const sections: SectionData[] = [
     items: shareImages,
   },
   {
-    title: "Photos",
-    lines: [],
-    items: photosImages,
-  },
-  {
-    title: "New Doorknob",
-    lines: [],
-    items: doorknobImages,
-  },
-  {
-    title: "ESP32 + E-Ink Weather Display",
-    lines: [],
-    items: esp32Images,
+    title: "IRL Projects",
+    lines: [
+      <>New Doorknob</>,
+      <>ESP32 + E-Ink Weather Display</>,
+    ],
+    items: irlImages,
   },
 ];
 

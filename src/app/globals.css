@@ -1704,8 +1704,7 @@ body.breathe-mode .convictions-list li {
 .scroll-slider {
   position: fixed;
   bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 32px;
   width: 240px;
   height: 36px;
   background: var(--bg);
@@ -1713,16 +1712,18 @@ body.breathe-mode .convictions-list li {
   z-index: 100;
   cursor: pointer;
   animation: sliderEntrance 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes sliderEntrance {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(20px) scaleY(0);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0) scaleY(1);
+    transform: translateY(0);
   }
 }
 
@@ -1755,7 +1756,7 @@ body.breathe-mode .convictions-list li {
   background: transparent;
   border: 1px solid var(--text-muted);
   cursor: grab;
-  transition: border-color 0.15s ease;
+  transition: left 0.1s ease-out, width 0.15s ease-out, border-color 0.15s ease;
 }
 
 .scroll-slider-handle:hover {
@@ -1765,6 +1766,31 @@ body.breathe-mode .convictions-list li {
 .scroll-slider-handle.dragging {
   cursor: grabbing;
   border-color: var(--text);
+}
+
+/* Vertical scroll slider for grid mode */
+.scroll-slider-vertical {
+  width: 36px;
+  height: 240px;
+}
+
+.scroll-slider-vertical .scroll-slider-sections {
+  flex-direction: column;
+}
+
+.scroll-slider-vertical .scroll-slider-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.scroll-slider-vertical .scroll-slider-handle {
+  top: 0;
+  left: -1px;
+  width: calc(100% + 2px);
+  height: auto;
+  min-width: auto;
+  min-height: 30px;
+  transition: top 0.1s ease-out, height 0.15s ease-out, border-color 0.15s ease;
 }
 
 @media (hover: none) and (pointer: coarse) {
@@ -1963,15 +1989,17 @@ body.breathe-mode .convictions-list li {
 }
 
 .showcase-grid-section {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 240px 1fr;
   gap: 20px;
+  align-items: start;
 }
 
-/* Sticky section headers in grid mode */
+/* Sticky section headers in grid mode — follows scroll alongside media */
 .showcase-grid-section .showcase-lines-content {
   position: sticky;
   top: 28px;
+  align-self: start;
   z-index: 10;
   background: var(--bg);
   padding: 8px 0;
@@ -2129,6 +2157,10 @@ body.breathe-mode .convictions-list li {
   }
 
   /* Grid view on mobile */
+  .showcase-grid-section {
+    grid-template-columns: 1fr;
+  }
+
   .showcase-grid-cards {
     grid-template-columns: 1fr;
   }

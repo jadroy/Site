@@ -345,13 +345,19 @@ export default function Home() {
       <div className="view-toggle">
         <button
           className={`view-toggle-btn ${viewMode === 'horizontal' ? 'active' : ''}`}
-          onClick={() => setViewMode('horizontal')}
+          onClick={() => {
+            setViewMode('horizontal');
+            setTimeout(() => showcaseRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+          }}
         >
           Scroll
         </button>
         <button
           className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
-          onClick={() => setViewMode('grid')}
+          onClick={() => {
+            setViewMode('grid');
+            setTimeout(() => showcaseRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+          }}
         >
           Grid
         </button>
@@ -425,7 +431,7 @@ export default function Home() {
       <section className={`showcase-panel ${viewMode === 'grid' ? 'showcase-panel-grid' : ''}`} ref={showcaseRef}>
         <ShowcaseSection viewMode={viewMode} />
       </section>
-      <ScrollSlider />
+      <ScrollSlider vertical={viewMode === 'grid'} />
     </div>
   );
 }
