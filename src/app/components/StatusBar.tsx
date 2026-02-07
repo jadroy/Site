@@ -57,6 +57,7 @@ export default function StatusBar({ currentSection }: { currentSection: string }
     };
   }, []);
 
+
   if (!mounted) return null;
 
   const arMaxH = 10;
@@ -74,6 +75,7 @@ export default function StatusBar({ currentSection }: { currentSection: string }
       </div>
 
       <div className="status-bar-group status-bar-right">
+        <span className="status-text status-text-dim">v0.2</span>
         <span className="status-text">{time}</span>
       </div>
     </div>
