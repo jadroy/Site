@@ -44,7 +44,7 @@ html::-webkit-scrollbar {
   --content-padding-x: 24px;
   --content-padding-y: 80px;
   --line-number-width: 28px;
-  --showcase-card-height: 360px;
+  --showcase-card-height: 70vh;
   --content-offset: 0px;
   /* 12-Column Grid System */
   --grid-columns: 12;
@@ -58,7 +58,7 @@ html::-webkit-scrollbar {
   :root {
     --content-padding-x: 32px;
     --line-number-width: 32px;
-    --showcase-card-height: 70vh;
+    --showcase-card-height: 85vh;
     --grid-gutter: 20px;
     --grid-margin: 32px;
   }
@@ -68,7 +68,7 @@ html::-webkit-scrollbar {
   :root {
     --content-padding-x: 40px;
     --line-number-width: 36px;
-    --showcase-card-height: 80vh;
+    --showcase-card-height: 90vh;
     --content-offset: 80px;
     --grid-gutter: 24px;
     --grid-margin: 48px;
@@ -78,7 +78,7 @@ html::-webkit-scrollbar {
 @media (min-width: 1280px) {
   :root {
     --line-number-width: 40px;
-    --showcase-card-height: 85vh;
+    --showcase-card-height: calc(100vh - 80px);
     --content-offset: calc(50vw - 750px);
     --grid-gutter: 24px;
     --grid-margin: 64px;
@@ -898,9 +898,6 @@ a.company:hover {
   gap: 8px;
 }
 
-.showcase-item a {
-  display: block;
-}
 
 .showcase-card {
   height: var(--showcase-card-height);
@@ -933,12 +930,7 @@ a.company:hover {
   text-shadow: none;
 }
 
-/* Mobile responsive - handled by CSS variables, minimal overrides */
-@media (max-width: 767px) {
-  main {
-    padding-bottom: 48px;
-  }
-}
+/* Mobile responsive - see consolidated block at end of file */
 
 /* Touch device support - native horizontal scroll fallback */
 @media (hover: none) and (pointer: coarse) {
@@ -1791,8 +1783,8 @@ body.breathe-mode .convictions-list li {
   height: 28px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0 var(--grid-margin);
+  justify-content: space-between;
+  padding: 0 12px;
   z-index: 50;
   font-size: 10px;
   letter-spacing: 0.05em;
@@ -1813,8 +1805,6 @@ body.breathe-mode .convictions-list li {
 }
 
 .status-bar-right {
-  position: absolute;
-  right: var(--grid-margin);
 }
 
 .status-text {
@@ -1833,17 +1823,7 @@ body.breathe-mode .convictions-list li {
   transition: width 0.3s ease, height 0.3s ease;
 }
 
-@media (max-width: 767px) {
-  .status-bar {
-    font-size: 9px;
-    height: 24px;
-    padding: 0 var(--content-padding-x);
-  }
-
-  .status-bar-right {
-    right: var(--content-padding-x);
-  }
-}
+/* Status bar mobile - see consolidated block at end of file */
 
 /* Controls Toggle Button */
 .controls-toggle {
@@ -1890,5 +1870,271 @@ body.breathe-mode .convictions-list li {
 @media (hover: none) and (pointer: coarse) {
   .controls-toggle {
     cursor: pointer;
+  }
+}
+
+/* =============================================
+   VIEW MODE TOGGLE
+   ============================================= */
+.view-toggle {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0;
+  z-index: 100;
+  height: 28px;
+  align-items: center;
+}
+
+.view-toggle-btn {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  font-family: inherit;
+  pointer-events: auto;
+}
+
+.view-toggle-btn:hover {
+  color: var(--text-muted);
+}
+
+.view-toggle-btn.active {
+  color: var(--text);
+}
+
+/* =============================================
+   GRID MODE — container overrides
+   ============================================= */
+.horizontal-scroll-container.grid-mode {
+  flex-direction: column;
+  min-width: auto;
+  height: auto;
+  overflow: visible;
+}
+
+.horizontal-scroll-container.grid-mode main {
+  width: 100%;
+  min-width: auto;
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+}
+
+/* Crossfade transition on the panel */
+.showcase-panel {
+  transition: opacity 0.3s ease;
+}
+
+.showcase-panel-grid {
+  display: block;
+  width: 100%;
+  min-width: auto;
+  height: auto;
+  padding: 0 var(--grid-margin) 80px;
+  overflow: visible;
+}
+
+/* =============================================
+   GRID VIEW — showcase sections
+   ============================================= */
+.showcase-grid-view {
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+  animation: gridFadeIn 0.4s ease-out both;
+}
+
+@keyframes gridFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.showcase-grid-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Sticky section headers in grid mode */
+.showcase-grid-section .showcase-lines-content {
+  position: sticky;
+  top: 28px;
+  z-index: 10;
+  background: var(--bg);
+  padding: 8px 0;
+}
+
+.showcase-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.showcase-grid-cards .showcase-item {
+  flex-shrink: initial;
+  opacity: 0;
+  animation: gridCardIn 0.35s ease-out forwards;
+}
+
+@keyframes gridCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.showcase-grid-cards .showcase-card {
+  height: auto;
+  aspect-ratio: 16 / 10;
+}
+
+.showcase-grid-cards .showcase-card img,
+.showcase-grid-cards .showcase-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Grid mode overflow is handled via JS (useEffect) for reliable sticky support */
+
+/* =============================================
+   MOBILE LAYOUT (< 768px)
+   Vertical stacking, touch targets, readability
+   ============================================= */
+@media (max-width: 767px) {
+  /* --- Core layout flip (horizontal -> vertical) --- */
+  html {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  body {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .horizontal-scroll-container {
+    flex-direction: column;
+    min-width: auto;
+    height: auto;
+  }
+
+  main {
+    width: 100%;
+    min-width: auto;
+    height: auto;
+    min-height: 100svh;
+    padding-bottom: 48px;
+  }
+
+  .showcase-panel {
+    width: 100%;
+    min-width: auto;
+    height: auto;
+    flex-direction: column;
+    gap: 48px;
+    padding: 48px var(--content-padding-x) 80px;
+  }
+
+  /* --- Showcase sections --- */
+  .showcase-with-lines {
+    flex-direction: column;
+    gap: 16px;
+    margin-right: 0;
+    width: 100%;
+  }
+
+  .showcase-lines-content {
+    max-width: none;
+  }
+
+  .showcase-cards-horizontal {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-right: 24px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .showcase-cards-horizontal > * {
+    scroll-snap-align: start;
+  }
+
+  .showcase-card {
+    height: 60vh;
+  }
+
+  /* --- Touch targets (44px minimum) --- */
+  .nav-btn {
+    padding: 12px 18px;
+    font-size: 14px;
+  }
+
+  .social-box {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .controls-toggle {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* --- Readability --- */
+  .status-bar {
+    font-size: 11px;
+    height: 28px;
+    padding: 0 var(--content-padding-x);
+  }
+
+  /* --- Hide/reposition elements --- */
+  .scroll-slider {
+    display: none;
+  }
+
+  .global-nav {
+    top: auto;
+    bottom: 24px;
+    transform: none;
+  }
+
+  .numbering-toggle {
+    display: none;
+  }
+
+  .position-indicator {
+    display: none;
+  }
+
+  .design-grid {
+    display: none;
+  }
+
+  /* Grid view on mobile */
+  .showcase-grid-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .view-toggle {
+    top: auto;
+    bottom: 68px;
   }
 }

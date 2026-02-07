@@ -91,11 +91,42 @@ export default function Home() {
     }
   }, [isHovering]);
 
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 767px)");
+    const onChange = (e: MediaQueryListEvent | MediaQueryList) => setIsMobile(e.matches);
+    onChange(mql);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange as (e: MediaQueryListEvent) => void);
+  }, []);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const showcaseRef = useRef<HTMLDivElement>(null);
 
   // Track current section for nav visibility
   const [currentSection, setCurrentSection] = useState<'home' | 'work'>('home');
+
+  // View mode toggle
+  const [viewMode, setViewMode] = useState<'horizontal' | 'grid'>('horizontal');
+
+  // Toggle overflow when switching to grid mode
+  // Only html scrolls — body stays overflow:visible so position:sticky works
+  useEffect(() => {
+    if (viewMode === 'grid') {
+      document.documentElement.style.overflowY = 'auto';
+      document.documentElement.style.overflowX = 'hidden';
+      document.body.style.overflow = 'visible';
+    } else {
+      document.documentElement.style.overflowY = '';
+      document.documentElement.style.overflowX = '';
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.documentElement.style.overflowY = '';
+      document.documentElement.style.overflowX = '';
+      document.body.style.overflow = '';
+    };
+  }, [viewMode]);
 
   // Line numbering mode
   type NumberingMode = 'none' | 'numbers' | 'slashes' | 'header-slashes';
@@ -114,6 +145,7 @@ export default function Home() {
   const dragStart = useRef({ x: 0, y: 0, offsetX: 0, offsetY: 0 });
 
   const handleDragStart = (e: React.MouseEvent) => {
+    if (isMobile) return;
     if (!e.shiftKey) return; // Hold shift to drag
     e.preventDefault();
     setIsDragging(true);
@@ -161,15 +193,34 @@ export default function Home() {
       if (e.key === 'Escape') {
         document.body.style.cursor = 'auto';
       }
-      if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      if (!isMobile && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
         e.preventDefault();
-        const amount = e.key === 'ArrowRight' ? 400 : -400;
-        window.scrollBy({ left: amount, behavior: 'instant' });
+        const items = Array.from(document.querySelectorAll('.showcase-item'));
+        if (items.length === 0) return;
+
+        const viewCenter = window.scrollX + window.innerWidth / 2;
+        let closestIdx = 0;
+        let closestDist = Infinity;
+        items.forEach((el, i) => {
+          const rect = el.getBoundingClientRect();
+          const elCenter = window.scrollX + rect.left + rect.width / 2;
+          const dist = Math.abs(elCenter - viewCenter);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closestIdx = i;
+          }
+        });
+
+        const nextIdx = e.key === 'ArrowRight'
+          ? Math.min(closestIdx + 1, items.length - 1)
+          : Math.max(closestIdx - 1, 0);
+
+        items[nextIdx].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isMobile]);
 
   const showNumber = (num: string, isHeader?: boolean) => {
     if (numberingMode === 'none') return '';
@@ -181,21 +232,32 @@ export default function Home() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollX = window.scrollX || document.documentElement.scrollLeft || document.body.scrollLeft;
-      const showcaseLeft = showcaseRef.current?.offsetLeft || 0;
-
-      if (scrollX < showcaseLeft - 200) {
-        setCurrentSection('home');
+      if (isMobile) {
+        const scrollY = window.scrollY;
+        const showcaseTop = showcaseRef.current?.offsetTop || 0;
+        if (scrollY < showcaseTop - 200) {
+          setCurrentSection('home');
+        } else {
+          setCurrentSection('work');
+        }
       } else {
-        setCurrentSection('work');
+        const scrollX = window.scrollX || document.documentElement.scrollLeft || document.body.scrollLeft;
+        const showcaseLeft = showcaseRef.current?.offsetLeft || 0;
+        if (scrollX < showcaseLeft - 200) {
+          setCurrentSection('home');
+        } else {
+          setCurrentSection('work');
+        }
       }
     };
     document.addEventListener('scroll', handleScroll, true);
     return () => document.removeEventListener('scroll', handleScroll, true);
-  }, []);
+  }, [isMobile]);
 
-  // Smooth horizontal scroll
+  // Smooth horizontal scroll (desktop only, horizontal mode only)
   useEffect(() => {
+    if (isMobile || viewMode === 'grid') return;
+
     const handleWheel = (e: WheelEvent) => {
       if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
         e.preventDefault();
@@ -206,20 +268,26 @@ export default function Home() {
 
     window.addEventListener('wheel', handleWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleWheel);
-  }, []);
+  }, [isMobile, viewMode]);
 
   const mainRef = useRef<HTMLElement>(null);
 
   const scrollToWork = () => {
-    showcaseRef.current?.scrollIntoView({ behavior: "smooth", inline: "start" });
+    showcaseRef.current?.scrollIntoView({
+      behavior: "smooth",
+      ...(isMobile ? { block: "start" } : { inline: "start" }),
+    });
   };
 
   const scrollToHome = () => {
-    mainRef.current?.scrollIntoView({ behavior: "smooth", inline: "start" });
+    mainRef.current?.scrollIntoView({
+      behavior: "smooth",
+      ...(isMobile ? { block: "start" } : { inline: "start" }),
+    });
   };
 
   return (
-    <div className="horizontal-scroll-container" ref={containerRef}>
+    <div className={`horizontal-scroll-container ${viewMode === 'grid' ? 'grid-mode' : ''}`} ref={containerRef}>
       <StatusBar currentSection={currentSection} />
       {/* 12-Column Grid Overlay */}
       {showGrid && showControls && (
@@ -273,6 +341,22 @@ export default function Home() {
         )}
       </div>
 
+      {/* View mode toggle */}
+      <div className="view-toggle">
+        <button
+          className={`view-toggle-btn ${viewMode === 'horizontal' ? 'active' : ''}`}
+          onClick={() => setViewMode('horizontal')}
+        >
+          Scroll
+        </button>
+        <button
+          className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+          onClick={() => setViewMode('grid')}
+        >
+          Grid
+        </button>
+      </div>
+
 
 
       {/* Line numbering toggle */}
@@ -314,7 +398,7 @@ export default function Home() {
           transform: `translate(${contentOffset.x}px, ${contentOffset.y}px)`,
           cursor: isDragging ? 'grabbing' : undefined
         } as React.CSSProperties}>
-        <div className="main-content intro-fade grid-col-11 grid-start-1 lg:grid-start-2 lg:grid-col-6">
+        <div className="main-content intro-fade grid-col-11 grid-start-1 lg:grid-start-2 lg:grid-col-5">
           <div className="line"><span className="ln">{showNumber('01')}</span><h1 className={`name ${isScrambling ? "name-scrambling" : ""}`} onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}>{chars.map((c, i) => (<span key={i} style={{ opacity: c.opacity }}>{c.char}</span>))}:</h1></div>
           <div className="line"><span className="ln">{showNumber('02')}</span><span className="location"><span className="tree-branch">⎿</span> San Francisco</span></div>
           <div className="line"><span className="ln">{showNumber('03')}</span><span className="about"><span className="tree-branch">⎿</span> Creative technologist, currently tinkering with e-ink interfaces and making stuff I'd like to exist.</span></div>
@@ -338,8 +422,8 @@ export default function Home() {
           </div>
         </div>
       </main>
-      <section className="showcase-panel" ref={showcaseRef}>
-        <ShowcaseSection />
+      <section className={`showcase-panel ${viewMode === 'grid' ? 'showcase-panel-grid' : ''}`} ref={showcaseRef}>
+        <ShowcaseSection viewMode={viewMode} />
       </section>
       <ScrollSlider />
     </div>

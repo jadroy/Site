@@ -65,7 +65,7 @@ export default function StatusBar({ currentSection }: { currentSection: string }
 
   return (
     <div className={`status-bar ${isScrolling ? "status-bar-hidden" : ""}`}>
-      <div className="status-bar-group status-bar-center">
+      <div className="status-bar-group status-bar-left">
         <span
           className="aspect-ratio-box"
           style={{ width: arW, height: arH }}

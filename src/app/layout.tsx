@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { JetBrains_Mono, Fira_Code, Source_Code_Pro, IBM_Plex_Mono, Space_Mono, Inconsolata, Roboto_Mono, Ubuntu_Mono, Anonymous_Pro, Cousine } from "next/font/google";
@@ -16,6 +16,11 @@ const robotoMono = Roboto_Mono({ subsets: ["latin"], variable: "--font-roboto-mo
 const ubuntuMono = Ubuntu_Mono({ subsets: ["latin"], variable: "--font-ubuntu-mono", weight: ["400"] });
 const anonymousPro = Anonymous_Pro({ subsets: ["latin"], variable: "--font-anonymous-pro", weight: ["400"] });
 const cousine = Cousine({ subsets: ["latin"], variable: "--font-cousine", weight: ["400"] });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: "Roy Jad",
