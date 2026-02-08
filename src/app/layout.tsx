@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { JetBrains_Mono, Fira_Code, Source_Code_Pro, IBM_Plex_Mono, Space_Mono, Inconsolata, Roboto_Mono, Ubuntu_Mono, Anonymous_Pro, Cousine } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 // import Crosshair from "./components/Crosshair";
 // import FontSwitcher from "./components/FontSwitcher";
@@ -38,6 +39,7 @@ export default function RootLayout({
         {/* <Crosshair /> */}
         {/* <FontSwitcher /> */}
         {children}
+        <Analytics />
       </body>
     </html>
   );
