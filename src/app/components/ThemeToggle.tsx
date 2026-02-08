@@ -36,12 +36,12 @@ const createDrumSound = (type: "kick" | "snare" | "hihat") => {
 };
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<"light" | "warm">("light");
+  const [theme, setTheme] = useState<"light" | "warm" | "dark">("light");
   const [drums, setDrums] = useState(false);
   const drumsRef = useRef(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("theme") as "light" | "warm" | null;
+    const saved = localStorage.getItem("theme") as "light" | "warm" | "dark" | null;
     if (saved) {
       setTheme(saved);
       document.documentElement.setAttribute("data-theme", saved);
@@ -79,10 +79,11 @@ export default function ThemeToggle() {
   }, [drums]);
 
   const toggleTheme = () => {
-    const newTheme = theme === "light" ? "warm" : "light";
-    setTheme(newTheme);
-    document.documentElement.setAttribute("data-theme", newTheme);
-    localStorage.setItem("theme", newTheme);
+    const order: Array<"light" | "warm" | "dark"> = ["light", "warm", "dark"];
+    const next = order[(order.indexOf(theme) + 1) % order.length];
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
   };
 
   const toggleDrums = () => {
@@ -100,8 +101,8 @@ export default function ThemeToggle() {
 
   return (
     <div className="toggles-container">
-      <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme" title="Warm mode">
-        <span className="theme-toggle-inner" />
+      <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme" title={theme === "light" ? "Warm mode" : theme === "warm" ? "Dark mode" : "Light mode"}>
+        <span className={`theme-toggle-inner ${theme !== "light" ? "filled" : ""}`} />
       </button>
       <button
         className={`theme-toggle ${drums ? "active" : ""}`}

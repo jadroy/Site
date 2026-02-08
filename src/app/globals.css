@@ -160,19 +160,6 @@ html::-webkit-scrollbar {
   .lg\:grid-start-5 { grid-column-start: 5; }
 }
 
-[data-theme="warm"] {
-  --bg: #faf8f5;
-  --text: #2a2520;
-  --text-muted: #5a5048;
-  --text-subtle: #7a7068;
-  --text-faint: #a09890;
-  --border: #e8e0d8;
-  --grid-line: #f0ebe5;
-  --card-bg: #f5f0ea;
-  --cursor: #cc6600;
-  --accent: #cc6600;
-}
-
 body {
   font-family: var(--font-ibm-plex-mono), monospace;
   font-size: 15px;
@@ -911,8 +898,9 @@ a.company:hover {
 .showcase-card img,
 .showcase-card video {
   height: 100%;
-  width: auto;
+  width: 100%;
   display: block;
+  object-fit: cover;
 }
 
 .showcase-caption {
@@ -1327,61 +1315,6 @@ a.company:hover {
 
 .writing-content .section-title {
   margin-bottom: 8px;
-}
-
-/* Theme Toggle */
-.theme-toggle {
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--border);
-  border-radius: 0;
-  background: var(--card-bg);
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  z-index: 1000;
-}
-
-@media (min-width: 768px) {
-  .theme-toggle {
-    top: 32px;
-    right: 32px;
-    width: 32px;
-    height: 32px;
-  }
-}
-
-.theme-toggle.active {
-  border-color: var(--text-muted);
-}
-
-.theme-toggle:hover {
-  border-color: var(--text-muted);
-}
-
-.theme-toggle-inner {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 1.5px solid var(--text-faint);
-  background: transparent;
-  transition: all 0.3s ease;
-}
-
-[data-theme="warm"] .theme-toggle-inner {
-  background: var(--text-muted);
-  border-color: var(--text);
-}
-
-@media (hover: none) and (pointer: coarse) {
-  .theme-toggle {
-    cursor: pointer;
-  }
 }
 
 @media (max-width: 767px) {
