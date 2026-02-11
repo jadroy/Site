@@ -1,5 +1,7 @@
 "use client";
 
+import React, { useEffect, useRef, useState } from "react";
+
 const humanoidImages = [
   { src: "/Humanoid Index/CleanShot 2026-02-06 at 14.41.55.mp4", alt: "Humanoid Index – Demo walkthrough", type: "video" },
   { src: "/Humanoid Index/CleanShot 2026-02-06 at 14.40.46@2x.png", alt: "Humanoid Index – Carousel view showing Neo by 1X Technologies", type: "image" },
@@ -24,31 +26,54 @@ const shareImages = [
   { src: "/Share/Share Work - Cover (6).png", alt: "Share Work Cover 6", type: "image" },
 ];
 
-const photosImages: { src: string; alt: string; type: string }[] = [
-];
-
 const irlImages = [
   { src: "/New doorknob/ABB6539D-6BC7-402E-A838-A11E432C84B8_1_105_c.jpeg", alt: "New Doorknob", type: "image" },
   { src: "/New doorknob/1EC092C6-8BF8-40BF-B9B3-A8D76017C2B4_1_105_c.jpeg", alt: "New Doorknob", type: "image" },
   { src: "/Esp32-weatherdisplay/B83BE970-9380-4464-A007-CD0E7A8B7CD2_1_105_c.jpeg", alt: "ESP32 E-Ink Weather Display", type: "image", objectPosition: "center bottom" },
 ];
 
-function ShowcaseCard({ item }: { item: { src: string; alt: string; type: string; playbackRate?: number; scale?: number; objectPosition?: string } }) {
+type ItemData = { src: string; alt: string; type: string; playbackRate?: number; scale?: number; objectPosition?: string };
+
+const ShowcaseCard = React.memo(function ShowcaseCard({ item }: { item: ItemData }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (item.type !== "video") return;
+    const el = cardRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [item.type]);
+
   return item.type === "video" ? (
-    <div className="showcase-card">
-      <video
-        src={item.src}
-        autoPlay
-        loop
-        muted
-        playsInline
-        style={item.scale ? { transform: `scale(${item.scale})` } : undefined}
-        ref={(el) => {
-          if (el && item.playbackRate) {
-            el.playbackRate = item.playbackRate;
-          }
-        }}
-      />
+    <div className="showcase-card" ref={cardRef}>
+      {isVisible && (
+        <video
+          src={item.src}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          style={item.scale ? { transform: `scale(${item.scale})` } : undefined}
+          ref={(el) => {
+            if (el && item.playbackRate) {
+              el.playbackRate = item.playbackRate;
+            }
+          }}
+        />
+      )}
     </div>
   ) : (
     <div className="showcase-card">
@@ -56,12 +81,12 @@ function ShowcaseCard({ item }: { item: { src: string; alt: string; type: string
       <img src={item.src} alt={item.alt} style={item.objectPosition ? { objectPosition: item.objectPosition } : undefined} />
     </div>
   );
-}
+});
 
 type SectionData = {
   title: string;
   lines: React.ReactNode[];
-  items: { src: string; alt: string; type: string; playbackRate?: number; scale?: number; objectPosition?: string }[];
+  items: ItemData[];
 };
 
 const sections: SectionData[] = [
@@ -98,11 +123,37 @@ const sections: SectionData[] = [
   },
 ];
 
+function useScrollReveal(containerRef: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in-view");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    const items = container.querySelectorAll(".showcase-item");
+    items.forEach((item) => observer.observe(item));
+
+    return () => observer.disconnect();
+  }, [containerRef]);
+}
+
 export default function ShowcaseSection({ viewMode = "horizontal" }: { viewMode?: "horizontal" | "grid" }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useScrollReveal(containerRef);
+
   if (viewMode === "grid") {
-    let globalIndex = 0;
     return (
-      <div className="showcase-grid-view">
+      <div className="showcase-grid-view" ref={containerRef}>
         {sections.map((section, si) => (
           <div key={si} className="showcase-grid-section">
             <div className="showcase-lines-content">
@@ -113,15 +164,11 @@ export default function ShowcaseSection({ viewMode = "horizontal" }: { viewMode?
             </div>
             {section.items.length > 0 && (
               <div className="showcase-grid-cards">
-                {section.items.map((item, index) => {
-                  const delay = globalIndex * 0.06;
-                  globalIndex++;
-                  return (
-                    <div key={index} className="showcase-item" style={{ animationDelay: `${delay}s` }}>
-                      <ShowcaseCard item={item} />
-                    </div>
-                  );
-                })}
+                {section.items.map((item, index) => (
+                  <div key={index} className="showcase-item">
+                    <ShowcaseCard item={item} />
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -131,7 +178,7 @@ export default function ShowcaseSection({ viewMode = "horizontal" }: { viewMode?
   }
 
   return (
-    <>
+    <div ref={containerRef} style={{ display: 'contents' }}>
       {sections.map((section, si) => (
         <div key={si} className="showcase-with-lines">
           <div className="showcase-lines-content">
@@ -149,6 +196,6 @@ export default function ShowcaseSection({ viewMode = "horizontal" }: { viewMode?
           </div>
         </div>
       ))}
-    </>
+    </div>
   );
 }

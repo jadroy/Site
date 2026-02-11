@@ -1,22 +1,24 @@
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import { JetBrains_Mono, Fira_Code, Source_Code_Pro, IBM_Plex_Mono, Space_Mono, Inconsolata, Roboto_Mono, Ubuntu_Mono, Anonymous_Pro, Cousine } from "next/font/google";
+import { GeistPixelLine } from "geist/font/pixel";
+import { IBM_Plex_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/react";
+import "./design-system.css";
 import "./globals.css";
-// import Crosshair from "./components/Crosshair";
-// import FontSwitcher from "./components/FontSwitcher";
 
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono", weight: ["300", "400"] });
-const firaCode = Fira_Code({ subsets: ["latin"], variable: "--font-fira-code", weight: ["300", "400"] });
-const sourceCodePro = Source_Code_Pro({ subsets: ["latin"], variable: "--font-source-code-pro", weight: ["300", "400"] });
-const ibmPlexMono = IBM_Plex_Mono({ subsets: ["latin"], variable: "--font-ibm-plex-mono", weight: ["300", "400"] });
-const spaceMono = Space_Mono({ subsets: ["latin"], variable: "--font-space-mono", weight: ["400"] });
-const inconsolata = Inconsolata({ subsets: ["latin"], variable: "--font-inconsolata", weight: ["300", "400"] });
-const robotoMono = Roboto_Mono({ subsets: ["latin"], variable: "--font-roboto-mono", weight: ["300", "400"] });
-const ubuntuMono = Ubuntu_Mono({ subsets: ["latin"], variable: "--font-ubuntu-mono", weight: ["400"] });
-const anonymousPro = Anonymous_Pro({ subsets: ["latin"], variable: "--font-anonymous-pro", weight: ["400"] });
-const cousine = Cousine({ subsets: ["latin"], variable: "--font-cousine", weight: ["400"] });
+const ibmPlexMono = IBM_Plex_Mono({ subsets: ["latin"], variable: "--font-ibm-plex-mono", weight: ["300", "400", "500"] });
+
+const saans = localFont({
+  src: [
+    { path: "./fonts/Saans-TRIAL-Regular.otf", weight: "400", style: "normal" },
+    { path: "./fonts/Saans-TRIAL-Medium.otf", weight: "500", style: "normal" },
+    { path: "./fonts/Saans-TRIAL-SemiBold.otf", weight: "600", style: "normal" },
+    { path: "./fonts/Saans-TRIAL-Bold.otf", weight: "700", style: "normal" },
+  ],
+  variable: "--font-saans",
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -35,9 +37,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${GeistSans.variable} ${GeistMono.variable} ${jetbrainsMono.variable} ${firaCode.variable} ${sourceCodePro.variable} ${ibmPlexMono.variable} ${spaceMono.variable} ${inconsolata.variable} ${robotoMono.variable} ${ubuntuMono.variable} ${anonymousPro.variable} ${cousine.variable}`}>
-        {/* <Crosshair /> */}
-        {/* <FontSwitcher /> */}
+      <body className={`${GeistSans.variable} ${GeistMono.variable} ${ibmPlexMono.variable} ${saans.variable} ${GeistPixelLine.variable}`}>
         {children}
         <Analytics />
       </body>
