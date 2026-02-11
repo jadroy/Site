@@ -550,11 +550,14 @@ export default function Home() {
 
   const [onLanding, setOnLanding] = useState(true);
 
-  const smoothScrollTo = (targetX: number, duration = 500) => {
+  const smoothScrollTo = (target: number, duration = 500) => {
     const html = document.documentElement;
     const body = document.body;
-    const startX = html.scrollLeft || body.scrollLeft || window.scrollX;
-    const diff = targetX - startX;
+    const vertical = isMobile;
+    const start = vertical
+      ? (window.scrollY || html.scrollTop || body.scrollTop)
+      : (html.scrollLeft || body.scrollLeft || window.scrollX);
+    const diff = target - start;
     if (Math.abs(diff) < 1) return;
     const startTime = performance.now();
 
@@ -564,9 +567,13 @@ export default function Home() {
       const ease = progress < 1
         ? 1 - Math.pow(1 - progress, 3) * (1 - progress * 0.3)
         : 1;
-      const val = startX + diff * ease;
-      html.scrollLeft = val;
-      body.scrollLeft = val;
+      const val = start + diff * ease;
+      if (vertical) {
+        window.scrollTo(0, val);
+      } else {
+        html.scrollLeft = val;
+        body.scrollLeft = val;
+      }
       if (progress < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
@@ -574,7 +581,9 @@ export default function Home() {
 
   const scrollToHome = () => {
     const homePanel = document.querySelector('.home-panel') as HTMLElement;
-    if (homePanel) smoothScrollTo(homePanel.offsetLeft);
+    if (homePanel) {
+      smoothScrollTo(isMobile ? homePanel.offsetTop : homePanel.offsetLeft);
+    }
     setOnLanding(false);
   };
 
@@ -659,7 +668,7 @@ export default function Home() {
           onClick={scrollToHome}
         >
           <span className="landing-enter-icon">&#x21C6;</span>
-          Shift + Enter to switch
+          {isMobile ? 'Enter' : 'Shift + Enter to switch'}
         </button>
       </div>
       {/* 12-Column Grid Overlay (debug) */}

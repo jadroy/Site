@@ -112,9 +112,11 @@ export default function StatusBar({ currentSection }: { currentSection: string }
 
     const updateTime = () => {
       const now = new Date();
-      const h = String(now.getHours()).padStart(2, "0");
+      const hours = now.getHours();
+      const h12 = hours % 12 || 12;
       const m = String(now.getMinutes()).padStart(2, "0");
-      setTime(`${h}:${m}`);
+      const ampm = hours >= 12 ? "PM" : "AM";
+      setTime(`${h12}:${m} ${ampm}`);
     };
     updateTime();
     const timeInterval = setInterval(updateTime, 1000);
