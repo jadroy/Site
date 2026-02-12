@@ -884,6 +884,7 @@ export default function Home() {
 
   const [onHome, setOnHome] = useState(true);
   const leverRef = useRef<PanelLeverHandle>(null);
+  const programmaticScroll = useRef(false);
 
   const smoothScrollTo = (target: number, duration = 800) => {
     const html = document.documentElement;
@@ -894,6 +895,7 @@ export default function Home() {
       : (html.scrollLeft || body.scrollLeft || window.scrollX);
     const diff = target - start;
     if (Math.abs(diff) < 1) return;
+    programmaticScroll.current = true;
     const startTime = performance.now();
 
     const step = (currentTime: number) => {
@@ -909,7 +911,11 @@ export default function Home() {
         html.scrollLeft = val;
         body.scrollLeft = val;
       }
-      if (progress < 1) requestAnimationFrame(step);
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        programmaticScroll.current = false;
+      }
     };
     requestAnimationFrame(step);
   };
@@ -927,9 +933,10 @@ export default function Home() {
     setOnHome(true);
   };
 
-  // Sync lever with scroll position
+  // Sync lever with scroll position (only for user-initiated scroll)
   useEffect(() => {
     const onScroll = () => {
+      if (programmaticScroll.current) return;
       const infoPanel = document.querySelector('.info-panel') as HTMLElement;
       if (!infoPanel) return;
       const scrollPos = isMobile
@@ -939,8 +946,8 @@ export default function Home() {
       const halfway = threshold / 2;
       setOnHome(scrollPos < halfway);
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    document.addEventListener('scroll', onScroll, true);
+    return () => document.removeEventListener('scroll', onScroll, true);
   }, [isMobile]);
 
   // Key tracker
@@ -1080,10 +1087,10 @@ export default function Home() {
     };
   }, [isMobile]);
 
-  const statementLines = [
-    "Creative technologist building tools, interfaces, and objects.",
-    "Drawn to things that feel considered and stay out of the way.",
-    "Currently exploring calm technology.",
+  const statementLines: (string | ReactNode)[] = [
+    "Creative technologist building tools, interfaces, and objects",
+    "Drawn to things that feel considered and stay out of the way",
+    <>Currently exploring <a href="https://en.wikipedia.org/wiki/Calm_technology" target="_blank" rel="noopener noreferrer">calm technology<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a></>,
   ];
 
   if (!booted) {
@@ -1380,7 +1387,7 @@ export default function Home() {
             <h2 className="section-label">Work</h2>
             <div className="work-row">
               <a href="https://context.ai" className="work-card" target="_blank" rel="noopener noreferrer">
-                <span className="company">Context</span>
+                <span className="company">Context<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></span>
                 <span className="years-inline">Founding Designer</span>
                 {showYears && <span className="years-inline">2025</span>}
               </a>
@@ -1440,8 +1447,8 @@ export default function Home() {
         </div>
         <div className="page-links">
           <a href="mailto:jadroy77@gmail.com">Email</a>
-          <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer">Twitter</a>
-          <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer">Twitter<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a>
+          <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer">LinkedIn<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a>
         </div>
         </div>
       </main>

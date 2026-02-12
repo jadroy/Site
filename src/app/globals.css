@@ -144,6 +144,8 @@ body::after {
   height: 100vh;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .horizontal-scroll-container::-webkit-scrollbar {
@@ -599,7 +601,6 @@ main.info-panel {
 .info-container .section-links a,
 .info-container .section-label {
   position: relative;
-  width: fit-content;
 }
 
 /* Top & bottom lines — contained to content */
@@ -880,6 +881,8 @@ main.info-panel.doc-expanded {
   display: flex;
   flex-direction: column;
   gap: 0;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 a.work-card {
@@ -889,8 +892,13 @@ a.work-card {
   width: fit-content;
 }
 
-a.work-card:hover {
-  color: #e8660a;
+a.work-card:hover > .company {
+  opacity: 0.6;
+}
+
+a.work-card:hover .external-arrow {
+  opacity: 0.8;
+  transform: translate(1px, -1px);
 }
 
 
@@ -929,6 +937,11 @@ a.work-card:hover {
 
 .page-links a:hover {
   opacity: 0.6;
+}
+
+.page-links a:hover .external-arrow {
+  opacity: 0.8;
+  transform: translate(1px, -1px);
 }
 
 .info-section-cases {
@@ -1005,6 +1018,10 @@ a.work-card:hover {
 .case-card:hover .external-arrow {
   opacity: 0.8;
   transform: translate(1px, -1px);
+}
+
+a.case-card:hover .company {
+  opacity: 0.6;
 }
 
 .case-card-text .years-inline {
@@ -1088,6 +1105,8 @@ a.work-card:hover {
 
 .conviction-item {
   color: inherit;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .work-item {
@@ -1810,12 +1829,29 @@ a.company:hover {
   position: relative;
   margin: 0;
   max-width: 720px;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* Statement weight variants */
 .statement-weight-light  { font-weight: 300; }
 .statement-weight-regular { font-weight: inherit; }
 .statement-weight-medium  { font-weight: 500; }
+
+.statement-text a {
+  color: inherit;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.statement-text a:hover {
+  opacity: 0.6;
+}
+
+.statement-text a:hover .external-arrow {
+  opacity: 0.8;
+  transform: translate(1px, -1px);
+}
 
 @media (min-width: 768px) {
 }
@@ -2499,26 +2535,11 @@ a.company:hover {
   color: var(--text-muted);
   pointer-events: none;
 
-  transition: transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.6s ease;
+  transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .status-bar-hidden {
   transform: translateY(-100%) !important;
-  opacity: 0;
-}
-
-.status-bar-items {
-  transition: opacity 0.12s ease, transform 0.12s ease;
-}
-
-.status-bar-items-in {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.status-bar-items-out {
-  opacity: 0;
-  transform: translateY(-6px);
 }
 
 /* Key Tracker */
@@ -2661,8 +2682,19 @@ a.company:hover {
   gap: 10px;
   z-index: 100;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+.panel-lever * {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.panel-lever:focus {
+  outline: none;
 }
 
 .panel-lever:focus-visible {
