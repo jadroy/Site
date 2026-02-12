@@ -1450,6 +1450,22 @@ export default function Home() {
           <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer">Twitter<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a>
           <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer">LinkedIn<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a>
         </div>
+        {isMobile && (
+          <div className="mobile-theme-picker">
+            <span className="mobile-theme-picker-label">Theme</span>
+            <div className="mobile-theme-dots">
+              {themeDefinitions.map((t) => (
+                <button
+                  key={t.name}
+                  className={`mobile-theme-dot${activeTheme === t.name ? ' active' : ''}`}
+                  style={{ background: t.vars['--bg'] || '#ebe9e8' }}
+                  onClick={() => handleThemeChange(t.name)}
+                  aria-label={t.name}
+                />
+              ))}
+            </div>
+          </div>
+        )}
         </div>
       </main>
 
