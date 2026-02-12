@@ -37,11 +37,11 @@ function formatRemaining(hours: number) {
 /** Tiny semicircular arc showing sun position through the day. */
 function DaylightArc({ progress, isNight }: { progress: number; isNight: boolean }) {
   // Arc from left to right (π to 0), progress 0→1 maps sunrise→sunset
-  const w = 24;
-  const h = 14;
+  const w = 26;
+  const h = 16;
   const cx = w / 2;
   const r = 10;
-  const baseY = h - 1;
+  const baseY = h - 2;
 
   // Clamp
   const p = Math.max(0, Math.min(1, progress));
@@ -61,14 +61,12 @@ function DaylightArc({ progress, isNight }: { progress: number; isNight: boolean
       {/* Arc path: semicircle from left to right */}
       <path
         d={`M ${cx - r} ${baseY} A ${r} ${r} 0 0 1 ${cx + r} ${baseY}`}
-        stroke="var(--text-faint)"
-        strokeWidth="0.5"
-        opacity={isNight ? "0.3" : "0.5"}
+        stroke="var(--text-muted)"
+        strokeWidth="0.8"
+        opacity={isNight ? "0.5" : "0.7"}
       />
-      {/* Sun/moon dot */}
-      {!isNight && (
-        <circle cx={dotX} cy={dotY} r="1.5" fill="var(--text-muted)" />
-      )}
+      {/* Sun dot */}
+      <circle cx={dotX} cy={dotY} r="2.5" fill="var(--accent-warm, #e07830)" />
     </svg>
   );
 }
@@ -197,15 +195,7 @@ export default function StatusBar({ currentSection }: { currentSection: string }
 
   return (
     <div className={`status-bar ${isScrolling ? "status-bar-hidden" : ""}`}>
-      <div className="status-bar-group status-bar-left">
-        <span
-          className="aspect-ratio-box"
-          style={{ width: arW, height: arH }}
-        />
-        <span className="status-text status-text-dim">{aspectRatio.w}:{aspectRatio.h}</span>
-      </div>
-
-      <div className="status-bar-group status-bar-right">
+      <div className="status-bar-group">
         {daylight && (
           <>
             <DaylightArc progress={daylight.progress} isNight={daylight.isNight} />
@@ -214,9 +204,6 @@ export default function StatusBar({ currentSection }: { currentSection: string }
             </span>
           </>
         )}
-        <span className="status-blinker" />
-        <span className="status-text status-text-dim">v0.2</span>
-        <span className="status-text">{time}</span>
       </div>
     </div>
   );

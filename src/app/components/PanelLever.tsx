@@ -10,32 +10,33 @@ import {
 } from "react";
 
 type Phase = "idle" | "holding" | "snapping" | "settling";
-type VisualPos = "landing" | "home";
+type VisualPos = "home" | "info";
 
 export interface PanelLeverHandle {
   triggerSnap: () => void;
 }
 
 interface PanelLeverProps {
-  onLanding: boolean;
+  onHome: boolean;
   onToggle: () => void;
   isMobile: boolean;
   shiftHeld: boolean;
+  onSnap?: () => void;
 }
 
 const PanelLever = forwardRef<PanelLeverHandle, PanelLeverProps>(
-  function PanelLever({ onLanding, onToggle, isMobile, shiftHeld }, ref) {
+  function PanelLever({ onHome, onToggle, isMobile, shiftHeld, onSnap }, ref) {
     const [phase, setPhase] = useState<Phase>("idle");
     const [visualPos, setVisualPos] = useState<VisualPos>(
-      onLanding ? "landing" : "home"
+      onHome ? "home" : "info"
     );
 
     // Sync visual position with prop when idle
     useEffect(() => {
       if (phase === "idle") {
-        setVisualPos(onLanding ? "landing" : "home");
+        setVisualPos(onHome ? "home" : "info");
       }
-    }, [onLanding, phase]);
+    }, [onHome, phase]);
 
     const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const snapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -51,7 +52,8 @@ const PanelLever = forwardRef<PanelLeverHandle, PanelLeverProps>(
 
     const doSnap = useCallback(() => {
       clearTimers();
-      const target: VisualPos = visualPos === "landing" ? "home" : "landing";
+      onSnap?.();
+      const target: VisualPos = visualPos === "home" ? "info" : "home";
       setVisualPos(target);
       setPhase("snapping");
       onToggle();
@@ -62,13 +64,18 @@ const PanelLever = forwardRef<PanelLeverHandle, PanelLeverProps>(
           setPhase("idle");
         }, 150);
       }, 300);
-    }, [visualPos, onToggle, clearTimers]);
+    }, [visualPos, onToggle, onSnap, clearTimers]);
 
     useImperativeHandle(ref, () => ({ triggerSnap: doSnap }), [doSnap]);
 
     const handlePointerDown = useCallback(
       (e: React.PointerEvent) => {
         if (isMobile) {
+          doSnap();
+          return;
+        }
+        if (phase === "snapping" || phase === "settling") {
+          // Rapid click — interrupt and snap immediately
           doSnap();
           return;
         }
@@ -94,7 +101,7 @@ const PanelLever = forwardRef<PanelLeverHandle, PanelLeverProps>(
     }, [phase, clearTimers]);
 
     // Left = landing, right = home
-    const isLeft = visualPos === "landing";
+    const isLeft = visualPos === "home";
 
     const leverClasses = [
       "panel-lever",
@@ -109,8 +116,8 @@ const PanelLever = forwardRef<PanelLeverHandle, PanelLeverProps>(
       <div
         className={leverClasses}
         role="switch"
-        aria-checked={!onLanding}
-        aria-label={`Switch to ${onLanding ? "home" : "landing"} panel`}
+        aria-checked={!onHome}
+        aria-label={`Switch to ${onHome ? "info" : "home"} panel`}
         tabIndex={0}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
@@ -124,7 +131,7 @@ const PanelLever = forwardRef<PanelLeverHandle, PanelLeverProps>(
       >
         {/* Left label */}
         <span className="panel-lever__label panel-lever__label--left">
-          Landing
+          Home
         </span>
 
         {/* Track with handle */}
@@ -134,7 +141,7 @@ const PanelLever = forwardRef<PanelLeverHandle, PanelLeverProps>(
 
         {/* Right label */}
         <span className="panel-lever__label panel-lever__label--right">
-          Home
+          Info
         </span>
 
         {/* Keyboard shortcut hint (desktop only) */}

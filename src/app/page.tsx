@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useLayoutEffect, ReactNode } from "react";
 import StatusBar from "./components/StatusBar";
 import BootSequence from "./components/BootSequence";
 import PanelLever, { type PanelLeverHandle } from "./components/PanelLever";
+import DotField from "./components/DotField";
 
 type CharData = { char: string; opacity: number };
 type ThemeVars = Record<string, string>;
@@ -310,7 +311,7 @@ function MemorySlideshow({ fx }: { fx: MemoryFx }) {
   const maskGrad = `radial-gradient(ellipse 65% 65% at center, black 15%, transparent ${fx.maskSoftness}%)`;
 
   return (
-    <div className="landing-memory" aria-hidden="true">
+    <div className="home-memory" aria-hidden="true">
       {/* SVG filter definitions */}
       <svg width="0" height="0" style={{ position: 'absolute' }}>
         <defs>
@@ -335,7 +336,7 @@ function MemorySlideshow({ fx }: { fx: MemoryFx }) {
         </defs>
       </svg>
 
-      <div className="landing-memory-glow">
+      <div className="home-memory-glow">
         <img
           src={memoryImages[active]}
           alt=""
@@ -343,7 +344,7 @@ function MemorySlideshow({ fx }: { fx: MemoryFx }) {
         />
       </div>
       <div
-        className="landing-memory-sharp"
+        className="home-memory-sharp"
         style={{
           filter: combinedFilter,
           imageRendering: fx.pixelate > 0 ? 'pixelated' : undefined,
@@ -367,10 +368,26 @@ function MemorySlideshow({ fx }: { fx: MemoryFx }) {
       </div>
       {/* Grain overlay */}
       {fx.grain > 0 && (
-        <div className="landing-memory-grain" style={{ opacity: fx.grain }} />
+        <div className="home-memory-grain" style={{ opacity: fx.grain }} />
       )}
     </div>
   );
+}
+
+let audioCtx: AudioContext | null = null;
+function playTick() {
+  if (!audioCtx) audioCtx = new AudioContext();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.04);
+  gain.gain.setValueAtTime(0.006, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+  osc.start(audioCtx.currentTime);
+  osc.stop(audioCtx.currentTime + 0.05);
 }
 
 export default function Home() {
@@ -628,8 +645,11 @@ export default function Home() {
     };
   }, [activeTheme, siteBg, textLightness]);
 
-  // TV scanlines on landing
+  // TV scanlines on home
   const [showTV, setShowTV] = useState(false);
+
+  // Dot field on home
+  const [showDotField, setShowDotField] = useState(false);
 
   // Memory effect controls
   const [showMemory, setShowMemory] = useState(false);
@@ -727,13 +747,14 @@ export default function Home() {
   }, []);
 
   const mainRef = useRef<HTMLDivElement>(null);
+  const infoContainerRef = useRef<HTMLDivElement>(null);
   const homeContainerRef = useRef<HTMLDivElement>(null);
   const [docExpanded, setDocExpanded] = useState(false);
 
-  // Subtle tilt on home container (disabled when expanded)
+  // Subtle tilt on info container (disabled when expanded)
   useEffect(() => {
     if (isMobile || docExpanded) return;
-    const el = homeContainerRef.current;
+    const el = infoContainerRef.current;
     if (!el) return;
 
     const onMove = (e: MouseEvent) => {
@@ -756,6 +777,32 @@ export default function Home() {
     };
   }, [isMobile, booted, docExpanded]);
 
+  // Subtle tilt on home container
+  useEffect(() => {
+    if (isMobile) return;
+    const el = homeContainerRef.current;
+    if (!el) return;
+
+    const onMove = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      el.style.transform = `perspective(1200px) rotateX(${-y * 0.4}deg) rotateY(${x * 0.4}deg) scale(1.005) translateY(-2px)`;
+    };
+
+    const onLeave = () => {
+      el.style.transform = '';
+    };
+
+    el.addEventListener('mousemove', onMove);
+    el.addEventListener('mouseleave', onLeave);
+    return () => {
+      el.removeEventListener('mousemove', onMove);
+      el.removeEventListener('mouseleave', onLeave);
+      el.style.transform = '';
+    };
+  }, [isMobile, booted]);
+
   // Escape to close expanded doc
   useEffect(() => {
     if (!docExpanded) return;
@@ -766,7 +813,7 @@ export default function Home() {
     return () => window.removeEventListener('keydown', onKey);
   }, [docExpanded]);
 
-  const [onLanding, setOnLanding] = useState(true);
+  const [onHome, setOnHome] = useState(true);
   const leverRef = useRef<PanelLeverHandle>(null);
 
   const smoothScrollTo = (target: number, duration = 500) => {
@@ -798,18 +845,34 @@ export default function Home() {
     requestAnimationFrame(step);
   };
 
-  const scrollToHome = () => {
-    const homePanel = document.querySelector('.home-panel') as HTMLElement;
-    if (homePanel) {
-      smoothScrollTo(isMobile ? homePanel.offsetTop : homePanel.offsetLeft);
+  const scrollToInfo = () => {
+    const infoPanel = document.querySelector('.info-panel') as HTMLElement;
+    if (infoPanel) {
+      smoothScrollTo(isMobile ? infoPanel.offsetTop : infoPanel.offsetLeft);
     }
-    setOnLanding(false);
+    setOnHome(false);
   };
 
-  const scrollToLanding = () => {
+  const scrollToHome = () => {
     smoothScrollTo(0);
-    setOnLanding(true);
+    setOnHome(true);
   };
+
+  // Sync lever with scroll position
+  useEffect(() => {
+    const onScroll = () => {
+      const infoPanel = document.querySelector('.info-panel') as HTMLElement;
+      if (!infoPanel) return;
+      const scrollPos = isMobile
+        ? window.scrollY
+        : (document.documentElement.scrollLeft || document.body.scrollLeft || window.scrollX);
+      const threshold = isMobile ? infoPanel.offsetTop : infoPanel.offsetLeft;
+      const halfway = threshold / 2;
+      setOnHome(scrollPos < halfway);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [isMobile]);
 
   // Key tracker
   const [heldKeys, setHeldKeys] = useState<string[]>([]);
@@ -869,6 +932,11 @@ export default function Home() {
   // Shift-held state for visual feedback
   const [shiftHeld, setShiftHeld] = useState(false);
 
+  // Easter egg: hold Shift+Enter for 5s
+  const [showWatModal, setShowWatModal] = useState(false);
+  const shiftEnterStart = useRef<number | null>(null);
+  const watTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Enter key toggles between panels + track shift
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -876,12 +944,27 @@ export default function Home() {
       if (e.key === 'Enter' && e.shiftKey && !e.metaKey && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
         e.preventDefault();
         leverRef.current?.triggerSnap();
+        if (!shiftEnterStart.current) {
+          shiftEnterStart.current = Date.now();
+          watTimer.current = setTimeout(() => {
+            setShowWatModal(true);
+            shiftEnterStart.current = null;
+          }, 7250);
+        }
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'Shift') setShiftHeld(false);
+      if (e.key === 'Enter' || e.key === 'Shift') {
+        shiftEnterStart.current = null;
+        if (watTimer.current) { clearTimeout(watTimer.current); watTimer.current = null; }
+      }
     };
-    const handleBlur = () => setShiftHeld(false);
+    const handleBlur = () => {
+      setShiftHeld(false);
+      shiftEnterStart.current = null;
+      if (watTimer.current) { clearTimeout(watTimer.current); watTimer.current = null; }
+    };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     window.addEventListener('blur', handleBlur);
@@ -889,8 +972,9 @@ export default function Home() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('blur', handleBlur);
+      if (watTimer.current) clearTimeout(watTimer.current);
     };
-  }, [onLanding]);
+  }, []);
 
   // Custom crosshair cursor
   const crosshairRef = useRef<HTMLDivElement>(null);
@@ -945,10 +1029,11 @@ export default function Home() {
       <StatusBar currentSection="home" />
       <PanelLever
         ref={leverRef}
-        onLanding={onLanding}
-        onToggle={() => { if (onLanding) scrollToHome(); else scrollToLanding(); }}
+        onHome={onHome}
+        onToggle={() => { if (onHome) scrollToInfo(); else scrollToHome(); }}
         isMobile={isMobile}
         shiftHeld={shiftHeld}
+        onSnap={playTick}
       />
       {!isMobile && heldKeys.length > 0 && (
         <div className="key-tracker">
@@ -965,15 +1050,18 @@ export default function Home() {
       )}
       <div className="noise-overlay" />
 
-      {/* Landing — typewriter intro */}
-      <div className={`landing-panel${showTV ? ' landing-tv' : ''}`}>
-        {showTV && <div className="landing-scanbar" />}
+      {/* Home — typewriter intro */}
+      <div className={`home-panel${showTV ? ' home-tv' : ''}`}>
+        {showTV && <div className="home-scanbar" />}
         {showMemory && <MemorySlideshow fx={memoryFx} />}
-        <div className="landing-text">
-          <div>
-            <p>Roy Jad</p>
-            <p>San Francisco, CA</p>
-            <p className="landing-clock">{currentTime}</p>
+        <div className="home-container" ref={homeContainerRef} onClick={() => { if (!onHome) { scrollToHome(); } }}>
+          {!isMobile && showDotField && <DotField />}
+          <div className="home-text">
+            <div>
+              <p className="home-clock">{currentTime}</p>
+              <p>Roy Jad</p>
+              <p>SF, CA</p>
+            </div>
           </div>
         </div>
       </div>
@@ -1109,6 +1197,15 @@ export default function Home() {
           </button>}
         </div>
         <div className="control-panel-row">
+          <span className="control-panel-label">Dots</span>
+          <button
+            className={`control-panel-toggle ${showDotField ? 'active' : ''}`}
+            onClick={() => setShowDotField(prev => !prev)}
+          >
+            {showDotField ? 'On' : 'Off'}
+          </button>
+        </div>
+        <div className="control-panel-row">
           <span className="control-panel-label">TV</span>
           <button
             className={`control-panel-toggle ${showTV ? 'active' : ''}`}
@@ -1193,7 +1290,7 @@ export default function Home() {
 
       <main
         ref={mainRef}
-        className={`home-panel${docExpanded ? ' doc-expanded' : ''}`}
+        className={`info-panel${docExpanded ? ' doc-expanded' : ''}`}
         onMouseDown={handleDragStart}
         style={{
           '--base-font-size': `${fontSize}px`,
@@ -1203,19 +1300,13 @@ export default function Home() {
         } as React.CSSProperties}
       >
         <div
-          className="home-container"
-          ref={homeContainerRef}
-          onClick={() => { if (onLanding) { scrollToHome(); } }}
+          className="info-container"
+          ref={infoContainerRef}
+          onClick={() => { if (onHome) { scrollToInfo(); } }}
         >
-        {/* Social links — top right of doc */}
-        <div className="page-links">
-          <a href="mailto:jadroy77@gmail.com" className="page-link-circle" title="Email">Em</a>
-          <a href="https://x.com/jadroy2" className="page-link-circle" target="_blank" rel="noopener noreferrer" title="Twitter">Tw</a>
-          <a href="https://www.linkedin.com/in/royjad/" className="page-link-circle" target="_blank" rel="noopener noreferrer" title="LinkedIn">Li</a>
-        </div>
-        <div className="home-grid">
+        <div className="info-grid">
           {/* Statement — spans full width */}
-          <section className="home-section home-section-statement intro-fade">
+          <section className="info-section info-section-statement intro-fade">
             <h2 className="section-label">About</h2>
             <div className={`statement-text statement-weight-${statementWeight}`}>
               {statementLines.map((line, i) => <div key={i}>{line}</div>)}
@@ -1223,22 +1314,24 @@ export default function Home() {
           </section>
 
           {/* Work */}
-          <section className="home-section home-section-full intro-fade">
+          <section className="info-section info-section-full intro-fade">
             <h2 className="section-label">Work</h2>
             <div className="work-row">
               <a href="https://context.ai" className="work-card" target="_blank" rel="noopener noreferrer">
                 <span className="company">Context</span>
-                <span className="years-inline">Founding Designer {showYears && '· 2025'}</span>
+                <span className="years-inline">Founding Designer</span>
+                {showYears && <span className="years-inline">2025</span>}
               </a>
               <div className="work-card">
                 <span className="company">Various companies</span>
-                <span className="years-inline">Independent Contractor {showYears && '· 2021–2025'}</span>
+                <span className="years-inline">Independent Contractor</span>
+                {showYears && <span className="years-inline">2021–2025</span>}
               </div>
             </div>
           </section>
 
           {/* Convictions */}
-          <section className="home-section home-section-full intro-fade">
+          <section className="info-section info-section-full intro-fade">
             <h2 className="section-label">Convictions</h2>
             <div className="conviction-item">Self-driving cars are necessary</div>
             <div className="conviction-item">Clarity and intentionality are core to a good life</div>
@@ -1246,28 +1339,48 @@ export default function Home() {
           </section>
 
           {/* Case Studies */}
-          <section className="home-section home-section-cases intro-fade">
+          <section className="info-section info-section-cases intro-fade">
             <h2 className="section-label">Case Studies</h2>
             <div className="case-cards">
-              <a href="https://humanoid-index.com" className="case-card" target="_blank" rel="noopener noreferrer">
-                <img className="case-card-img" src="/Humanoid Index/CleanShot 2026-02-06 at 14.40.42@2x.png" alt="Humanoid Index" />
-                <div className="case-card-text"><span className="company">Humanoid Index</span><span className="years-inline">A catalog of humanoid robots</span></div>
-              </a>
-              <a href="https://context.ai" className="case-card" target="_blank" rel="noopener noreferrer">
-                <img className="case-card-img" src="/Context/Landing Hero.png" alt="Context" />
-                <div className="case-card-text"><span className="company">Context</span><span className="years-inline">Founding Designer</span></div>
-              </a>
-              <div className="case-card">
-                <img className="case-card-img" src="/Share/Share Work - Cover (1).png" alt="Share" />
-                <div className="case-card-text"><span className="company">Share</span><span className="years-inline">Phone-native work sharing</span></div>
-              </div>
-              <div className="case-card">
-                <img className="case-card-img" src="/Esp32-weatherdisplay/B83BE970-9380-4464-A007-CD0E7A8B7CD2_1_105_c.jpeg" alt="IRL Projects" style={{ objectPosition: 'bottom' }} />
-                <div className="case-card-text"><span className="company">IRL Projects</span><span className="years-inline">Weather Display, Doorknob</span></div>
-              </div>
+              {[
+                { href: "https://humanoid-index.com", img: "/Humanoid Index/CleanShot 2026-02-06 at 14.40.42@2x.png", alt: "Humanoid Index", title: "Humanoid Index", sub: "A catalog of humanoid robots" },
+                { href: "https://context.ai", img: "/Context/Context landing hero.png", alt: "Context", title: "Context", sub: "Founding Designer", imgStyle: { objectFit: 'contain' as const, background: '#f7f7f7' } },
+                { img: "/Share/Share Work - Cover (1).png", alt: "Share", title: "Share", sub: "Phone-native work sharing" },
+                { img: "/Esp32-weatherdisplay/B83BE970-9380-4464-A007-CD0E7A8B7CD2_1_105_c.jpeg", alt: "IRL Projects", title: "IRL Projects", sub: "ESP32 E-Ink Weather Display", imgStyle: { objectPosition: 'bottom' } },
+              ].map((card, i) => {
+                const Tag = card.href ? 'a' : 'div';
+                const linkProps = card.href ? { href: card.href, target: "_blank" as const, rel: "noopener noreferrer" } : {};
+                return (
+                  <Tag
+                    key={i}
+                    className="case-card"
+                    {...linkProps}
+                    onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
+                      const angle = (Math.random() - 0.5) * 0.8;
+                      e.currentTarget.style.transform = `translateY(-2px) rotate(${angle}deg)`;
+                      playTick();
+                    }}
+                    onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
+                      e.currentTarget.style.transform = '';
+                    }}
+                  >
+                    <img className="case-card-img" src={card.img} alt={card.alt} style={card.imgStyle} />
+                    <div className="case-card-text">
+                      <span className="company">{card.title}{card.href && <svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg>}</span>
+                      <span className="years-inline">{card.sub}</span>
+                    </div>
+                  </Tag>
+                );
+              })}
             </div>
           </section>
 
+
+        </div>
+        <div className="page-links">
+          <a href="mailto:jadroy77@gmail.com">Email</a>
+          <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer">Twitter</a>
+          <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
         </div>
         </div>
       </main>
@@ -1346,6 +1459,16 @@ export default function Home() {
           }}>
             Reset
           </button>
+        </div>
+      )}
+
+      {/* Easter egg modal */}
+      {showWatModal && (
+        <div className="wat-modal-overlay" onClick={() => setShowWatModal(false)}>
+          <div className="wat-modal" onClick={(e) => e.stopPropagation()}>
+            <p>what are you doing</p>
+            <button onClick={() => setShowWatModal(false)}>sorry</button>
+          </div>
         </div>
       )}
     </div>
