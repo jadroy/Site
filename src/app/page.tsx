@@ -751,6 +751,75 @@ export default function Home() {
   const homeContainerRef = useRef<HTMLDivElement>(null);
   const [docExpanded, setDocExpanded] = useState(false);
 
+  // Drag-to-scroll between panels (with momentum)
+  const dragScrollRef = useRef({ startX: 0, startScroll: 0, hasMoved: false, lastX: 0, lastTime: 0, velocity: 0 });
+
+  const handleScrollDragStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isMobile) return;
+    if (e.shiftKey) return; // Shift+drag = content position
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('a, button, input, [role="button"], [role="switch"]')) return;
+
+    const html = document.documentElement;
+    const scrollPos = html.scrollLeft || document.body.scrollLeft || window.scrollX;
+    dragScrollRef.current = { startX: e.clientX, startScroll: scrollPos, hasMoved: false, lastX: e.clientX, lastTime: performance.now(), velocity: 0 };
+
+    const onMove = (ev: PointerEvent) => {
+      const now = performance.now();
+      const dt = now - dragScrollRef.current.lastTime;
+      const dx = ev.clientX - dragScrollRef.current.startX;
+      if (Math.abs(dx) > 5) {
+        dragScrollRef.current.hasMoved = true;
+        document.body.style.cursor = 'grabbing';
+        document.body.style.userSelect = 'none';
+      }
+      // Track velocity (px/ms) with smoothing
+      if (dt > 0) {
+        const instantV = (ev.clientX - dragScrollRef.current.lastX) / dt;
+        dragScrollRef.current.velocity = dragScrollRef.current.velocity * 0.4 + instantV * 0.6;
+      }
+      dragScrollRef.current.lastX = ev.clientX;
+      dragScrollRef.current.lastTime = now;
+
+      const newScroll = dragScrollRef.current.startScroll - dx;
+      html.scrollLeft = newScroll;
+      document.body.scrollLeft = newScroll;
+    };
+
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+
+      if (dragScrollRef.current.hasMoved) {
+        // Prevent the click that follows pointerup
+        const preventClick = (ev: MouseEvent) => { ev.stopPropagation(); ev.preventDefault(); };
+        window.addEventListener('click', preventClick, { capture: true, once: true });
+
+        // Momentum: project scroll position based on release velocity
+        const v = dragScrollRef.current.velocity; // px/ms (negative = scrolling right)
+        const momentumPx = -v * 600; // project ~600ms of coast (generous)
+        const currentScroll = html.scrollLeft || document.body.scrollLeft || window.scrollX;
+        const projected = currentScroll + momentumPx;
+
+        const infoPanel = document.querySelector('.info-panel') as HTMLElement;
+        if (infoPanel) {
+          const threshold = infoPanel.offsetLeft * 0.335;
+          if (projected > threshold) {
+            scrollToInfo();
+          } else {
+            scrollToHome();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
   // Subtle tilt on info container (disabled when expanded)
   useEffect(() => {
     if (isMobile || docExpanded) return;
@@ -816,7 +885,7 @@ export default function Home() {
   const [onHome, setOnHome] = useState(true);
   const leverRef = useRef<PanelLeverHandle>(null);
 
-  const smoothScrollTo = (target: number, duration = 500) => {
+  const smoothScrollTo = (target: number, duration = 800) => {
     const html = document.documentElement;
     const body = document.body;
     const vertical = isMobile;
@@ -949,7 +1018,7 @@ export default function Home() {
           watTimer.current = setTimeout(() => {
             setShowWatModal(true);
             shiftEnterStart.current = null;
-          }, 7250);
+          }, 5000);
         }
       }
     };
@@ -1025,8 +1094,9 @@ export default function Home() {
     <div
       className="horizontal-scroll-container"
       ref={containerRef}
+      onPointerDown={handleScrollDragStart}
     >
-      <StatusBar currentSection="home" />
+      <StatusBar currentSection={onHome ? "home" : "info"} />
       <PanelLever
         ref={leverRef}
         onHome={onHome}
@@ -1035,7 +1105,7 @@ export default function Home() {
         shiftHeld={shiftHeld}
         onSnap={playTick}
       />
-      {!isMobile && heldKeys.length > 0 && (
+      {!isMobile && showControls && heldKeys.length > 0 && (
         <div className="key-tracker">
           {heldKeys.map((k) => (
             <span key={k} className="key-tracker-key">{k}</span>
@@ -1059,8 +1129,7 @@ export default function Home() {
           <div className="home-text">
             <div>
               <p className="home-clock">{currentTime}</p>
-              <p>Roy Jad</p>
-              <p>SF, CA</p>
+              <p className="home-subtitle">Roy Jad <span className="home-sep">/</span> SF, CA</p>
             </div>
           </div>
         </div>
@@ -1081,14 +1150,7 @@ export default function Home() {
       )}
 
 
-      {/* Controls toggle button - always visible */}
-      <button
-        className={`controls-toggle ${showControls ? 'active' : ''}`}
-        onClick={() => setShowControls(prev => !prev)}
-        title={showControls ? 'Hide controls (⌘.)' : 'Show controls (⌘.)'}
-      >
-        <span className="controls-toggle-icon" />
-      </button>
+      {/* Controls toggle button - hidden, use ⌘. to open */}
       {/* Appearance controls panel */}
       {showControls && <div className="control-panel control-panel-appearance">
         <div className="control-panel-row">
@@ -1358,7 +1420,6 @@ export default function Home() {
                     onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
                       const angle = (Math.random() - 0.5) * 0.8;
                       e.currentTarget.style.transform = `translateY(-2px) rotate(${angle}deg)`;
-                      playTick();
                     }}
                     onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
                       e.currentTarget.style.transform = '';

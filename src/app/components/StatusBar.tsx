@@ -75,6 +75,21 @@ export default function StatusBar({ currentSection }: { currentSection: string }
   const [time, setTime] = useState("--:--");
   const [mounted, setMounted] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
+  const [displaySection, setDisplaySection] = useState(currentSection);
+  const prevSection = useRef(currentSection);
+  useEffect(() => {
+    if (currentSection !== prevSection.current) {
+      setTransitioning(true);
+      // Wait for fade-out, then swap content and fade back in
+      const timer = setTimeout(() => {
+        prevSection.current = currentSection;
+        setDisplaySection(currentSection);
+        setTransitioning(false);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [currentSection]);
   const [aspectRatio, setAspectRatio] = useState({ w: 16, h: 9 });
   const [daylight, setDaylight] = useState<{
     remaining: string;
@@ -173,7 +188,7 @@ export default function StatusBar({ currentSection }: { currentSection: string }
     const onScroll = () => {
       setIsScrolling(true);
       if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
-      scrollTimerRef.current = setTimeout(() => setIsScrolling(false), 800);
+      scrollTimerRef.current = setTimeout(() => setIsScrolling(false), 400);
     };
     document.addEventListener("scroll", onScroll, true);
 
@@ -195,14 +210,18 @@ export default function StatusBar({ currentSection }: { currentSection: string }
 
   return (
     <div className={`status-bar ${isScrolling ? "status-bar-hidden" : ""}`}>
-      <div className="status-bar-group">
-        {daylight && (
-          <>
-            <DaylightArc progress={daylight.progress} isNight={daylight.isNight} />
-            <span className="status-text status-text-dim">
-              {daylight.isNight ? `${daylight.remaining} to sunrise` : `${daylight.remaining} of light`}
-            </span>
-          </>
+      <div className={`status-bar-group status-bar-items ${transitioning ? "status-bar-items-out" : "status-bar-items-in"}`}>
+        {displaySection === 'home' ? (
+          daylight && (
+            <>
+              <DaylightArc progress={daylight.progress} isNight={daylight.isNight} />
+              <span className="status-text status-text-dim">
+                {daylight.isNight ? `${daylight.remaining} to sunrise` : `${daylight.remaining} of light`}
+              </span>
+            </>
+          )
+        ) : (
+          <span className="status-text status-text-dim">v0.2</span>
         )}
       </div>
     </div>
