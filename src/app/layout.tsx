@@ -10,6 +10,11 @@ import "./globals.css";
 
 const ibmPlexMono = IBM_Plex_Mono({ subsets: ["latin"], variable: "--font-ibm-plex-mono", weight: ["300", "400", "500"] });
 
+const departureMono = localFont({
+  src: [{ path: "./fonts/DepartureMono-Regular.woff2", weight: "400", style: "normal" }],
+  variable: "--font-departure-mono",
+});
+
 const saans = localFont({
   src: [
     { path: "./fonts/Saans-TRIAL-Regular.otf", weight: "400", style: "normal" },
@@ -37,7 +42,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${GeistSans.variable} ${GeistMono.variable} ${ibmPlexMono.variable} ${saans.variable} ${GeistPixelLine.variable}`}>
+      <body className={`${GeistSans.variable} ${GeistMono.variable} ${ibmPlexMono.variable} ${saans.variable} ${GeistPixelLine.variable} ${departureMono.variable}`}>
         {children}
         <Analytics />
       </body>

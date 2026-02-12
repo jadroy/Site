@@ -40,3 +40,9 @@ The site is daylight-aware. `getSunTimes(lat, lng)` computes sunrise/sunset usin
 - Spatial/glass-like panels, noise grain overlay
 - Prefer SVG + CSS over canvas/WebGL — keep bundle small
 - All animations should be subtle, purposeful, and pausable
+
+## Code Quality Rules
+- Flag any change that adds significant complexity, bloat, or performance cost before implementing
+- Keep the codebase clean — avoid dead code, unnecessary wrappers, or redundant state
+- No heavy JS where CSS can do the job
+- If a requested feature conflicts with the horizontal scroll architecture or other core patterns, say so upfront

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useLayoutEffect, ReactNode } from "react";
 import StatusBar from "./components/StatusBar";
 import BootSequence from "./components/BootSequence";
+import PanelLever, { type PanelLeverHandle } from "./components/PanelLever";
 
 type CharData = { char: string; opacity: number };
 type ThemeVars = Record<string, string>;
@@ -125,11 +126,11 @@ const themeDefinitions: { name: string; vars: ThemeVars }[] = [
     name: 'Ember',
     vars: {
       '--bg': '#1a1614',
-      '--text': 'hsl(30, 15%, 55%)',
-      '--text-muted': 'hsl(30, 12%, 48%)',
-      '--text-subtle': 'hsl(30, 10%, 42%)',
-      '--text-faint': 'hsl(30, 8%, 34%)',
-      '--border': 'hsl(30, 10%, 22%)',
+      '--text': 'hsl(30, 15%, 68%)',
+      '--text-muted': 'hsl(30, 12%, 58%)',
+      '--text-subtle': 'hsl(30, 10%, 50%)',
+      '--text-faint': 'hsl(30, 8%, 42%)',
+      '--border': 'hsl(30, 10%, 24%)',
       '--grid-line': 'hsl(30, 8%, 16%)',
       '--card-bg': 'hsl(30, 10%, 13%)',
       '--cursor': 'hsl(35, 80%, 50%)',
@@ -142,11 +143,11 @@ const themeDefinitions: { name: string; vars: ThemeVars }[] = [
     name: 'Slate',
     vars: {
       '--bg': '#151a1e',
-      '--text': 'hsl(210, 15%, 55%)',
-      '--text-muted': 'hsl(210, 12%, 48%)',
-      '--text-subtle': 'hsl(210, 10%, 42%)',
-      '--text-faint': 'hsl(210, 8%, 34%)',
-      '--border': 'hsl(210, 10%, 22%)',
+      '--text': 'hsl(210, 15%, 68%)',
+      '--text-muted': 'hsl(210, 12%, 58%)',
+      '--text-subtle': 'hsl(210, 10%, 50%)',
+      '--text-faint': 'hsl(210, 8%, 42%)',
+      '--border': 'hsl(210, 10%, 24%)',
       '--grid-line': 'hsl(210, 8%, 16%)',
       '--card-bg': 'hsl(210, 10%, 13%)',
       '--cursor': 'hsl(200, 60%, 52%)',
@@ -159,11 +160,11 @@ const themeDefinitions: { name: string; vars: ThemeVars }[] = [
     name: 'Void',
     vars: {
       '--bg': '#171717',
-      '--text': 'hsl(0, 0%, 55%)',
-      '--text-muted': 'hsl(0, 0%, 48%)',
-      '--text-subtle': 'hsl(0, 0%, 42%)',
-      '--text-faint': 'hsl(0, 0%, 34%)',
-      '--border': 'hsl(0, 0%, 22%)',
+      '--text': 'hsl(0, 0%, 68%)',
+      '--text-muted': 'hsl(0, 0%, 58%)',
+      '--text-subtle': 'hsl(0, 0%, 50%)',
+      '--text-faint': 'hsl(0, 0%, 42%)',
+      '--border': 'hsl(0, 0%, 24%)',
       '--grid-line': 'hsl(0, 0%, 16%)',
       '--card-bg': 'hsl(0, 0%, 13%)',
       '--cursor': 'hsl(0, 0%, 65%)',
@@ -176,11 +177,11 @@ const themeDefinitions: { name: string; vars: ThemeVars }[] = [
     name: 'Soot',
     vars: {
       '--bg': '#0e0e0e',
-      '--text': 'hsl(0, 0%, 38%)',
-      '--text-muted': 'hsl(0, 0%, 33%)',
-      '--text-subtle': 'hsl(0, 0%, 28%)',
-      '--text-faint': 'hsl(0, 0%, 22%)',
-      '--border': 'hsl(0, 0%, 16%)',
+      '--text': 'hsl(0, 0%, 52%)',
+      '--text-muted': 'hsl(0, 0%, 45%)',
+      '--text-subtle': 'hsl(0, 0%, 38%)',
+      '--text-faint': 'hsl(0, 0%, 30%)',
+      '--border': 'hsl(0, 0%, 18%)',
       '--grid-line': 'hsl(0, 0%, 11%)',
       '--card-bg': 'hsl(0, 0%, 8%)',
       '--cursor': 'hsl(0, 0%, 42%)',
@@ -229,6 +230,145 @@ function BarToggle<T extends string>({
           {opt.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+const memoryImages = [
+  "/photos/me/DABF7F66-A96C-4DD8-A99E-844411C4FA0D_1_105_c.jpeg",
+  "/photos/image_2.jpg",
+  "/Context/Landing Hero.png",
+  "/photos/me/4CD50948-9950-4963-90A7-B8E053E7EF43_1_105_c.jpeg",
+  "/Humanoid Index/CleanShot 2026-02-06 at 14.40.42@2x.png",
+  "/photos/image_1.jpg",
+  "/Share/Share Work - Cover (1).png",
+];
+
+type MemoryFx = {
+  grayscale: number;
+  contrast: number;
+  brightness: number;
+  blur: number;
+  dither: number;
+  grain: number;
+  halftone: number;
+  pixelate: number;
+  maskSoftness: number;
+};
+
+const defaultFx: MemoryFx = {
+  grayscale: 0,
+  contrast: 1,
+  brightness: 1,
+  blur: 0,
+  dither: 0,
+  grain: 0,
+  halftone: 0,
+  pixelate: 0,
+  maskSoftness: 70,
+};
+
+const memoryPresets: { name: string; fx: Partial<MemoryFx> }[] = [
+  { name: "Clean", fx: {} },
+  { name: "Dither", fx: { dither: 0.8, grayscale: 80, contrast: 1.6 } },
+  { name: "Newsprint", fx: { halftone: 1, grayscale: 100, contrast: 1.3 } },
+  { name: "Grain", fx: { grain: 0.6, contrast: 1.1, brightness: 1.05 } },
+  { name: "Faded", fx: { grayscale: 60, contrast: 0.85, brightness: 1.15, blur: 1 } },
+  { name: "Pixel", fx: { pixelate: 8, contrast: 1.2 } },
+  { name: "Stark", fx: { grayscale: 100, contrast: 2.2, brightness: 1.1, dither: 0.5 } },
+];
+
+function MemorySlideshow({ fx }: { fx: MemoryFx }) {
+  const [active, setActive] = useState(0);
+  const [fade, setFade] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFade(false);
+      setTimeout(() => {
+        setActive((prev) => (prev + 1) % memoryImages.length);
+        setFade(true);
+      }, 1200);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const cssFilter = [
+    fx.grayscale > 0 ? `grayscale(${fx.grayscale}%)` : '',
+    fx.contrast !== 1 ? `contrast(${fx.contrast})` : '',
+    fx.brightness !== 1 ? `brightness(${fx.brightness})` : '',
+    fx.blur > 0 ? `blur(${fx.blur}px)` : '',
+  ].filter(Boolean).join(' ') || 'none';
+
+  const svgFilter = [
+    fx.dither > 0 ? 'url(#memory-dither)' : '',
+    fx.halftone > 0 ? 'url(#memory-halftone)' : '',
+  ].filter(Boolean).join(' ');
+
+  const combinedFilter = [cssFilter !== 'none' ? cssFilter : '', svgFilter].filter(Boolean).join(' ') || 'none';
+
+  const maskGrad = `radial-gradient(ellipse 65% 65% at center, black 15%, transparent ${fx.maskSoftness}%)`;
+
+  return (
+    <div className="landing-memory" aria-hidden="true">
+      {/* SVG filter definitions */}
+      <svg width="0" height="0" style={{ position: 'absolute' }}>
+        <defs>
+          <filter id="memory-dither" colorInterpolationFilters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="1.5" numOctaves="1" seed="2" result="noise" />
+            <feComponentTransfer in="noise" result="threshNoise">
+              <feFuncR type="discrete" tableValues={`${0.5 - fx.dither * 0.4} ${0.5 + fx.dither * 0.4}`} />
+              <feFuncG type="discrete" tableValues={`${0.5 - fx.dither * 0.4} ${0.5 + fx.dither * 0.4}`} />
+              <feFuncB type="discrete" tableValues={`${0.5 - fx.dither * 0.4} ${0.5 + fx.dither * 0.4}`} />
+            </feComponentTransfer>
+            <feBlend in="SourceGraphic" in2="threshNoise" mode="multiply" />
+          </filter>
+          <filter id="memory-halftone" colorInterpolationFilters="sRGB">
+            <feTurbulence type="turbulence" baseFrequency={0.05 + fx.halftone * 0.05} numOctaves="1" seed="0" result="dots" />
+            <feComponentTransfer in="dots" result="pattern">
+              <feFuncR type="discrete" tableValues="0 1" />
+              <feFuncG type="discrete" tableValues="0 1" />
+              <feFuncB type="discrete" tableValues="0 1" />
+            </feComponentTransfer>
+            <feBlend in="SourceGraphic" in2="pattern" mode="multiply" />
+          </filter>
+        </defs>
+      </svg>
+
+      <div className="landing-memory-glow">
+        <img
+          src={memoryImages[active]}
+          alt=""
+          className={fade ? "memory-visible" : "memory-hidden"}
+        />
+      </div>
+      <div
+        className="landing-memory-sharp"
+        style={{
+          filter: combinedFilter,
+          imageRendering: fx.pixelate > 0 ? 'pixelated' : undefined,
+        } as React.CSSProperties}
+      >
+        <img
+          src={memoryImages[active]}
+          alt=""
+          className={fade ? "memory-visible" : "memory-hidden"}
+          style={{
+            maskImage: maskGrad,
+            WebkitMaskImage: maskGrad,
+            ...(fx.pixelate > 0 ? {
+              imageRendering: 'pixelated' as const,
+              width: `${100 / (1 + fx.pixelate * 0.5)}%`,
+              height: `${100 / (1 + fx.pixelate * 0.5)}%`,
+              transform: `scale(${1 + fx.pixelate * 0.5})`,
+            } : {}),
+          }}
+        />
+      </div>
+      {/* Grain overlay */}
+      {fx.grain > 0 && (
+        <div className="landing-memory-grain" style={{ opacity: fx.grain }} />
+      )}
     </div>
   );
 }
@@ -345,6 +485,7 @@ export default function Home() {
   const [convictionsCollapsed, setConvictionsCollapsed] = useState(false);
   const [showYears, setShowYears] = useState(true);
   const [activeTheme, setActiveTheme] = useState('Default');
+  const [fontMode, setFontMode] = useState<'saans' | 'mono'>('saans');
   const [autoDarkNotice, setAutoDarkNotice] = useState(false);
 
   // Resolve theme synchronously before first paint (localStorage + timezone fallback)
@@ -360,6 +501,24 @@ export default function Home() {
       setAutoDarkNotice(true);
     }
   }, []);
+
+  // Load font preference
+  useLayoutEffect(() => {
+    const saved = localStorage.getItem('rj-font-pref');
+    if (saved === 'mono') {
+      setFontMode('mono');
+      document.documentElement.dataset.font = 'mono';
+    }
+  }, []);
+
+  // Apply font mode to DOM
+  useLayoutEffect(() => {
+    if (fontMode === 'mono') {
+      document.documentElement.dataset.font = 'mono';
+    } else {
+      delete document.documentElement.dataset.font;
+    }
+  }, [fontMode]);
 
   // Refine with precise geolocation if available (async, fires after paint)
   useEffect(() => {
@@ -398,6 +557,15 @@ export default function Home() {
     setActiveTheme(themeName);
     localStorage.setItem('rj-theme-pref', themeName);
     setAutoDarkNotice(false);
+  };
+
+  const handleFontChange = (mode: 'saans' | 'mono') => {
+    setFontMode(mode);
+    if (mode === 'mono') {
+      localStorage.setItem('rj-font-pref', 'mono');
+    } else {
+      localStorage.removeItem('rj-font-pref');
+    }
   };
 
   const switchToLight = () => {
@@ -459,6 +627,18 @@ export default function Home() {
       allThemeKeys.forEach(k => root.style.removeProperty(k));
     };
   }, [activeTheme, siteBg, textLightness]);
+
+  // TV scanlines on landing
+  const [showTV, setShowTV] = useState(false);
+
+  // Memory effect controls
+  const [showMemory, setShowMemory] = useState(false);
+  const [memoryFx, setMemoryFx] = useState<MemoryFx>({ ...defaultFx });
+  const [showMemoryFx, setShowMemoryFx] = useState(false);
+  const updateFx = (key: keyof MemoryFx, val: number) =>
+    setMemoryFx((prev) => ({ ...prev, [key]: val }));
+  const applyMemoryPreset = (p: Partial<MemoryFx>) =>
+    setMemoryFx({ ...defaultFx, ...p });
 
   // Draggable content position
   const [contentOffset, setContentOffset] = useState({ x: 0, y: 0 }); // Fine-tune with Shift+drag
@@ -547,8 +727,47 @@ export default function Home() {
   }, []);
 
   const mainRef = useRef<HTMLDivElement>(null);
+  const homeContainerRef = useRef<HTMLDivElement>(null);
+  const [docExpanded, setDocExpanded] = useState(false);
+
+  // Subtle tilt on home container (disabled when expanded)
+  useEffect(() => {
+    if (isMobile || docExpanded) return;
+    const el = homeContainerRef.current;
+    if (!el) return;
+
+    const onMove = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      el.style.transform = `perspective(1200px) rotateX(${-y * 0.4}deg) rotateY(${x * 0.4}deg) scale(1.005) translateY(-2px)`;
+    };
+
+    const onLeave = () => {
+      el.style.transform = '';
+    };
+
+    el.addEventListener('mousemove', onMove);
+    el.addEventListener('mouseleave', onLeave);
+    return () => {
+      el.removeEventListener('mousemove', onMove);
+      el.removeEventListener('mouseleave', onLeave);
+      el.style.transform = '';
+    };
+  }, [isMobile, booted, docExpanded]);
+
+  // Escape to close expanded doc
+  useEffect(() => {
+    if (!docExpanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDocExpanded(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [docExpanded]);
 
   const [onLanding, setOnLanding] = useState(true);
+  const leverRef = useRef<PanelLeverHandle>(null);
 
   const smoothScrollTo = (target: number, duration = 500) => {
     const html = document.documentElement;
@@ -592,18 +811,152 @@ export default function Home() {
     setOnLanding(true);
   };
 
-  // Enter key toggles between panels
+  // Key tracker
+  const [heldKeys, setHeldKeys] = useState<string[]>([]);
+
   useEffect(() => {
-    const handleEnterKey = (e: KeyboardEvent) => {
+    if (isMobile) return;
+    const keys = new Set<string>();
+
+    const fmt = (key: string) => {
+      if (key === 'Meta') return 'Cmd';
+      if (key === 'Control') return 'Ctrl';
+      if (key === ' ') return 'Space';
+      if (key === 'ArrowUp') return '\u2191';
+      if (key === 'ArrowDown') return '\u2193';
+      if (key === 'ArrowLeft') return '\u2190';
+      if (key === 'ArrowRight') return '\u2192';
+      if (key === 'Escape') return 'Esc';
+      if (key.length === 1) return key.toUpperCase();
+      return key;
+    };
+
+    const sync = () => setHeldKeys([...keys]);
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat) return;
+      keys.add(fmt(e.key));
+      sync();
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      keys.delete(fmt(e.key));
+      sync();
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      keys.add(e.button === 2 ? 'Right Click' : 'Click');
+      sync();
+    };
+    const onMouseUp = (e: MouseEvent) => {
+      keys.delete(e.button === 2 ? 'Right Click' : 'Click');
+      sync();
+    };
+    const onBlur = () => { keys.clear(); sync(); };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, [isMobile]);
+
+  // Shift-held state for visual feedback
+  const [shiftHeld, setShiftHeld] = useState(false);
+
+  // Enter key toggles between panels + track shift
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setShiftHeld(true);
       if (e.key === 'Enter' && e.shiftKey && !e.metaKey && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
         e.preventDefault();
-        if (onLanding) scrollToHome();
-        else scrollToLanding();
+        leverRef.current?.triggerSnap();
       }
     };
-    window.addEventListener('keydown', handleEnterKey);
-    return () => window.removeEventListener('keydown', handleEnterKey);
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setShiftHeld(false);
+    };
+    const handleBlur = () => setShiftHeld(false);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
+    };
   }, [onLanding]);
+
+  // Peek toward next panel while Shift is held
+  const peekRef = useRef<number | null>(null);
+  const peekActive = useRef(false);
+
+  useEffect(() => {
+    if (isMobile) return;
+
+    if (shiftHeld) {
+      const html = document.documentElement;
+      const body = document.body;
+      const vertical = false; // desktop only
+      const current = html.scrollLeft || body.scrollLeft || window.scrollX;
+      const peekAmount = 60;
+      const target = onLanding ? current + peekAmount : current - peekAmount;
+
+      peekActive.current = true;
+      peekRef.current = current;
+
+      // Smooth nudge toward target
+      const start = current;
+      const diff = target - start;
+      const startTime = performance.now();
+      const duration = 350;
+
+      const step = (now: number) => {
+        if (!peekActive.current) return;
+        const elapsed = now - startTime;
+        const t = Math.min(elapsed / duration, 1);
+        const ease = t < 1 ? t * (2 - t) : 1; // ease-out quad
+        const val = start + diff * ease;
+        html.scrollLeft = val;
+        body.scrollLeft = val;
+        if (t < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    } else if (peekActive.current && peekRef.current !== null) {
+      // Return to original position
+      const html = document.documentElement;
+      const body = document.body;
+      const current = html.scrollLeft || body.scrollLeft || window.scrollX;
+      const target = peekRef.current;
+
+      peekActive.current = false;
+
+      const start = current;
+      const diff = target - start;
+      if (Math.abs(diff) < 1) return;
+      const startTime = performance.now();
+      const duration = 300;
+
+      const step = (now: number) => {
+        if (peekActive.current) return; // new peek started, bail
+        const elapsed = now - startTime;
+        const t = Math.min(elapsed / duration, 1);
+        const ease = t < 1 ? t * (2 - t) : 1;
+        const val = start + diff * ease;
+        html.scrollLeft = val;
+        body.scrollLeft = val;
+        if (t < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+
+      peekRef.current = null;
+    }
+  }, [shiftHeld, isMobile, onLanding]);
 
   // Custom crosshair cursor
   const crosshairRef = useRef<HTMLDivElement>(null);
@@ -652,10 +1005,32 @@ export default function Home() {
       ref={containerRef}
     >
       <StatusBar currentSection="home" />
+      <PanelLever
+        ref={leverRef}
+        onLanding={onLanding}
+        onToggle={() => { if (onLanding) scrollToHome(); else scrollToLanding(); }}
+        isMobile={isMobile}
+        shiftHeld={shiftHeld}
+      />
+      {!isMobile && heldKeys.length > 0 && (
+        <div className="key-tracker">
+          {heldKeys.map((k) => (
+            <span key={k} className="key-tracker-key">{k}</span>
+          ))}
+          {heldKeys.includes('Shift') && !heldKeys.includes('Enter') && (
+            <span className="key-tracker-hint">Enter</span>
+          )}
+          {heldKeys.includes('Enter') && !heldKeys.includes('Shift') && (
+            <span className="key-tracker-hint">Shift</span>
+          )}
+        </div>
+      )}
       <div className="noise-overlay" />
 
       {/* Landing — typewriter intro */}
-      <div className="landing-panel">
+      <div className={`landing-panel${showTV ? ' landing-tv' : ''}`}>
+        {showTV && <div className="landing-scanbar" />}
+        {showMemory && <MemorySlideshow fx={memoryFx} />}
         <div className="landing-text">
           <div>
             <p>Roy Jad</p>
@@ -663,13 +1038,6 @@ export default function Home() {
             <p className="landing-clock">{currentTime}</p>
           </div>
         </div>
-        <button
-          className="landing-enter"
-          onClick={scrollToHome}
-        >
-          <span className="landing-enter-icon">&#x21C6;</span>
-          {isMobile ? 'Enter' : 'Shift + Enter to switch'}
-        </button>
       </div>
       {/* 12-Column Grid Overlay (debug) */}
       {showGrid && (
@@ -762,6 +1130,21 @@ export default function Home() {
             ))}
           </span>
         </div>
+        <div className="control-panel-row">
+          <span className="control-panel-label">Font</span>
+          <button
+            className={`control-panel-toggle ${fontMode === 'saans' ? 'active' : ''}`}
+            onClick={() => handleFontChange('saans')}
+          >
+            Saans
+          </button>
+          <button
+            className={`control-panel-toggle ${fontMode === 'mono' ? 'active' : ''}`}
+            onClick={() => handleFontChange('mono')}
+          >
+            Mono
+          </button>
+        </div>
         <div className="control-panel-divider" />
         <div className="control-panel-row">
           <span className="control-panel-label">Lens</span>
@@ -770,6 +1153,30 @@ export default function Home() {
             onClick={() => setShowLensControls(prev => !prev)}
           >
             {showLensControls ? 'On' : 'Off'}
+          </button>
+        </div>
+        <div className="control-panel-row">
+          <span className="control-panel-label">Memory</span>
+          <button
+            className={`control-panel-toggle ${showMemory ? 'active' : ''}`}
+            onClick={() => setShowMemory(prev => !prev)}
+          >
+            {showMemory ? 'On' : 'Off'}
+          </button>
+          {showMemory && <button
+            className={`control-panel-toggle ${showMemoryFx ? 'active' : ''}`}
+            onClick={() => setShowMemoryFx(prev => !prev)}
+          >
+            FX
+          </button>}
+        </div>
+        <div className="control-panel-row">
+          <span className="control-panel-label">TV</span>
+          <button
+            className={`control-panel-toggle ${showTV ? 'active' : ''}`}
+            onClick={() => setShowTV(prev => !prev)}
+          >
+            {showTV ? 'On' : 'Off'}
           </button>
         </div>
         <div className="control-panel-row">
@@ -783,9 +1190,72 @@ export default function Home() {
         </div>
       </div>}
 
+      {/* Memory FX panel */}
+      {showMemoryFx && (
+        <div className="control-panel control-panel-memory">
+          <div className="control-panel-presets">
+            {memoryPresets.map((p) => (
+              <button key={p.name} className="control-panel-preset-btn" onClick={() => applyMemoryPreset(p.fx)}>
+                {p.name}
+              </button>
+            ))}
+          </div>
+          <div className="control-panel-slider">
+            <span className="control-panel-label">Grayscale</span>
+            <input type="range" min="0" max="100" step="1" value={memoryFx.grayscale} onChange={e => updateFx('grayscale', parseInt(e.target.value))} />
+            <span className="control-panel-value">{memoryFx.grayscale}%</span>
+          </div>
+          <div className="control-panel-slider">
+            <span className="control-panel-label">Contrast</span>
+            <input type="range" min="0.5" max="3" step="0.05" value={memoryFx.contrast} onChange={e => updateFx('contrast', parseFloat(e.target.value))} />
+            <span className="control-panel-value">{memoryFx.contrast.toFixed(2)}</span>
+          </div>
+          <div className="control-panel-slider">
+            <span className="control-panel-label">Bright</span>
+            <input type="range" min="0.5" max="2" step="0.05" value={memoryFx.brightness} onChange={e => updateFx('brightness', parseFloat(e.target.value))} />
+            <span className="control-panel-value">{memoryFx.brightness.toFixed(2)}</span>
+          </div>
+          <div className="control-panel-slider">
+            <span className="control-panel-label">Blur</span>
+            <input type="range" min="0" max="8" step="0.5" value={memoryFx.blur} onChange={e => updateFx('blur', parseFloat(e.target.value))} />
+            <span className="control-panel-value">{memoryFx.blur}px</span>
+          </div>
+          <div className="control-panel-divider" />
+          <div className="control-panel-slider">
+            <span className="control-panel-label">Dither</span>
+            <input type="range" min="0" max="1" step="0.05" value={memoryFx.dither} onChange={e => updateFx('dither', parseFloat(e.target.value))} />
+            <span className="control-panel-value">{memoryFx.dither.toFixed(2)}</span>
+          </div>
+          <div className="control-panel-slider">
+            <span className="control-panel-label">Halftone</span>
+            <input type="range" min="0" max="1" step="0.05" value={memoryFx.halftone} onChange={e => updateFx('halftone', parseFloat(e.target.value))} />
+            <span className="control-panel-value">{memoryFx.halftone.toFixed(2)}</span>
+          </div>
+          <div className="control-panel-slider">
+            <span className="control-panel-label">Grain</span>
+            <input type="range" min="0" max="1" step="0.05" value={memoryFx.grain} onChange={e => updateFx('grain', parseFloat(e.target.value))} />
+            <span className="control-panel-value">{memoryFx.grain.toFixed(2)}</span>
+          </div>
+          <div className="control-panel-slider">
+            <span className="control-panel-label">Pixelate</span>
+            <input type="range" min="0" max="16" step="1" value={memoryFx.pixelate} onChange={e => updateFx('pixelate', parseInt(e.target.value))} />
+            <span className="control-panel-value">{memoryFx.pixelate}</span>
+          </div>
+          <div className="control-panel-divider" />
+          <div className="control-panel-slider">
+            <span className="control-panel-label">Mask</span>
+            <input type="range" min="30" max="100" step="1" value={memoryFx.maskSoftness} onChange={e => updateFx('maskSoftness', parseInt(e.target.value))} />
+            <span className="control-panel-value">{memoryFx.maskSoftness}%</span>
+          </div>
+          <button className="control-panel-reset-btn" onClick={() => setMemoryFx({ ...defaultFx })}>
+            Reset
+          </button>
+        </div>
+      )}
+
       <main
         ref={mainRef}
-        className="home-panel"
+        className={`home-panel${docExpanded ? ' doc-expanded' : ''}`}
         onMouseDown={handleDragStart}
         style={{
           '--base-font-size': `${fontSize}px`,
@@ -794,86 +1264,78 @@ export default function Home() {
           '--tree-branch-size': `${treeBranchSize}px`,
         } as React.CSSProperties}
       >
-        <div className="home-top-row">
-          {/* Statement */}
-          <div className="statement-box spatial-panel intro-fade">
-            <WindowBar title="Statement">
-              <BarToggle
-                options={[
-                  { label: 'Light', value: 'light' as const },
-                  { label: 'Regular', value: 'regular' as const },
-                  { label: 'Medium', value: 'medium' as const },
-                ]}
-                value={statementWeight}
-                onChange={setStatementWeight}
-              />
-            </WindowBar>
+        <div
+          className={`home-container${docExpanded ? ' home-container-expanded' : ''}`}
+          ref={homeContainerRef}
+          onClick={() => { if (!docExpanded) setDocExpanded(true); }}
+        >
+        {docExpanded && (
+          <button className="doc-close" onClick={(e) => { e.stopPropagation(); setDocExpanded(false); }}>
+            Close
+          </button>
+        )}
+        <div className="home-grid">
+          {/* Statement — spans full width */}
+          <section className="home-section home-section-statement intro-fade">
             <p className={`statement-text statement-weight-${statementWeight}`}>{statementText}</p>
-          </div>
+          </section>
 
-          {/* Convictions */}
-          <div className="home-cluster home-cluster-convictions spatial-panel intro-fade">
-            <WindowBar title="Convictions">
-              <BarButton
-                label={convictionsCollapsed ? 'Expand' : 'Collapse'}
-                onClick={() => setConvictionsCollapsed(prev => !prev)}
-              />
-            </WindowBar>
-            {!convictionsCollapsed && (
-              <>
-                <div className="line"><span className="conviction-item"><span className="tree-branch">⎿</span> Self-driving cars are necessary</span></div>
-                <div className="line"><span className="conviction-item"><span className="tree-branch">⎿</span> Clarity and intentionality are core to a good life</span></div>
-                <div className="line"><span className="conviction-item"><span className="tree-branch">⎿</span> Spatial computing is the future of interfaces</span></div>
-              </>
-            )}
-          </div>
-
-          {/* Work */}
-          <div className="home-cluster home-cluster-work spatial-panel intro-fade">
-            <WindowBar title="Work">
-              <BarButton
-                label={showYears ? 'Hide years' : 'Show years'}
-                onClick={() => setShowYears(prev => !prev)}
-              />
-            </WindowBar>
-            <div className="line"><span className="work-item"><span className="tree-branch">⎿</span> <a href="https://context.ai" className="company" target="_blank" rel="noopener noreferrer">Context</a>, Founding Designer {showYears && <span className="years-inline">2025</span>}</span></div>
-            <div className="line"><span className="work-item"><span className="tree-branch">⎿</span> <span className="company">Various companies</span>, Independent Contractor {showYears && <span className="years-inline">2021–2025</span>}</span></div>
-          </div>
-
-          {/* Links */}
-          <div className="home-cluster home-cluster-links spatial-panel intro-fade">
-            <WindowBar title="Links" />
-            <div className="social-links">
-              <a href="mailto:jadroy77@gmail.com" className="social-box">Email</a>
-              <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer" className="social-box">Twitter</a>
-              <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer" className="social-box">LinkedIn</a>
+          {/* Work / Convictions / Links — 4-column row */}
+          <section className="home-section home-section-info intro-fade">
+            <div className="info-row">
+              <div className="info-col">
+                <h2 className="section-label">Work</h2>
+                <a href="https://context.ai" className="work-card" target="_blank" rel="noopener noreferrer">
+                  <span className="company">Context</span>
+                  <span className="years-inline">Founding Designer {showYears && '· 2025'}</span>
+                </a>
+                <div className="work-card">
+                  <span className="company">Various companies</span>
+                  <span className="years-inline">Independent Contractor {showYears && '· 2021–2025'}</span>
+                </div>
+              </div>
+              <div className="info-col">
+                <h2 className="section-label">Convictions</h2>
+                <div className="line"><span className="conviction-item">Self-driving cars are necessary</span></div>
+                <div className="line"><span className="conviction-item">Clarity and intentionality are core to a good life</span></div>
+                <div className="line"><span className="conviction-item">Spatial computing is the future of interfaces</span></div>
+              </div>
+              <div className="info-col">
+                <h2 className="section-label">Links</h2>
+                <div className="section-links">
+                  <a href="mailto:jadroy77@gmail.com">Email</a>
+                  <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer">Twitter</a>
+                  <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+                </div>
+              </div>
+              <div className="info-col"></div>
             </div>
-          </div>
+          </section>
+
+          {/* Case Studies — full width row */}
+          <section className="home-section home-section-cases intro-fade">
+            <h2 className="section-label">Case Studies</h2>
+            <div className="case-cards">
+              <a href="https://humanoid-index.com" className="case-card" target="_blank" rel="noopener noreferrer">
+                <div className="case-card-text"><span className="company">Humanoid Index</span><span className="years-inline">A catalog of humanoid robots</span></div>
+                <img className="case-card-img" src="/Humanoid Index/CleanShot 2026-02-06 at 14.40.42@2x.png" alt="Humanoid Index" />
+              </a>
+              <a href="https://context.ai" className="case-card" target="_blank" rel="noopener noreferrer">
+                <div className="case-card-text"><span className="company">Context</span><span className="years-inline">Founding Designer</span></div>
+                <img className="case-card-img" src="/Context/Landing Hero.png" alt="Context" />
+              </a>
+              <div className="case-card">
+                <div className="case-card-text"><span className="company">Share</span><span className="years-inline">Phone-native work sharing</span></div>
+                <img className="case-card-img" src="/Share/Share Work - Cover (1).png" alt="Share" />
+              </div>
+              <div className="case-card">
+                <div className="case-card-text"><span className="company">IRL Projects</span><span className="years-inline">Weather Display, Doorknob</span></div>
+                <img className="case-card-img" src="/Esp32-weatherdisplay/B83BE970-9380-4464-A007-CD0E7A8B7CD2_1_105_c.jpeg" alt="IRL Projects" style={{ objectPosition: 'bottom' }} />
+              </div>
+            </div>
+          </section>
         </div>
-
-        {/* Case Studies — second row */}
-        <div className="home-cluster home-cluster-cases spatial-panel intro-fade">
-          <WindowBar title="Case Studies" />
-          <div className="case-cards">
-            <a href="https://humanoid-index.com" className="case-card" target="_blank" rel="noopener noreferrer">
-              <div className="case-card-text"><span className="company">Humanoid Index</span><span className="years-inline">A catalog of humanoid robots</span></div>
-              <img className="case-card-img" src="/Humanoid Index/CleanShot 2026-02-06 at 14.40.42@2x.png" alt="Humanoid Index" />
-            </a>
-            <a href="https://context.ai" className="case-card" target="_blank" rel="noopener noreferrer">
-              <div className="case-card-text"><span className="company">Context</span><span className="years-inline">Founding Designer</span></div>
-              <img className="case-card-img" src="/Context/Landing Hero.png" alt="Context" />
-            </a>
-            <div className="case-card">
-              <div className="case-card-text"><span className="company">Share</span><span className="years-inline">Phone-native work sharing</span></div>
-              <img className="case-card-img" src="/Share/Share Work - Cover (1).png" alt="Share" />
-            </div>
-            <div className="case-card">
-              <div className="case-card-text"><span className="company">IRL Projects</span><span className="years-inline">Doorknob, Weather Display</span></div>
-              <img className="case-card-img" src="/New doorknob/ABB6539D-6BC7-402E-A838-A11E432C84B8_1_105_c.jpeg" alt="IRL Projects" />
-            </div>
-          </div>
         </div>
-
       </main>
       {/* Auto-dark mode notification */}
       {autoDarkNotice && (
