@@ -2698,8 +2698,7 @@ a.company:hover {
 }
 
 .panel-lever:focus-visible {
-  outline: 1px solid var(--text-muted);
-  outline-offset: 6px;
+  outline: none;
 }
 
 /* Labels flanking the track */

@@ -377,17 +377,59 @@ function MemorySlideshow({ fx }: { fx: MemoryFx }) {
 let audioCtx: AudioContext | null = null;
 function playTick() {
   if (!audioCtx) audioCtx = new AudioContext();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.04);
-  gain.gain.setValueAtTime(0.006, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-  osc.start(audioCtx.currentTime);
-  osc.stop(audioCtx.currentTime + 0.05);
+  const t = audioCtx.currentTime;
+
+  // Cloth flip — soft fabric unfurl
+  const dur = 0.26;
+  const bufferLen = Math.floor(audioCtx.sampleRate * dur);
+  const buffer = audioCtx.createBuffer(1, bufferLen, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferLen; i++) data[i] = Math.random() * 2 - 1;
+
+  // Layer 1: muffled "fwup" — the initial flip
+  const n1 = audioCtx.createBufferSource();
+  n1.buffer = buffer;
+  const lp1 = audioCtx.createBiquadFilter();
+  lp1.type = 'lowpass';
+  lp1.frequency.setValueAtTime(2400, t);
+  lp1.frequency.exponentialRampToValueAtTime(500, t + 0.08);
+  lp1.Q.value = 0.6;
+  const g1 = audioCtx.createGain();
+  g1.gain.setValueAtTime(0.002, t);
+  g1.gain.linearRampToValueAtTime(0.004, t + 0.015);
+  g1.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+  n1.connect(lp1); lp1.connect(g1); g1.connect(audioCtx.destination);
+  n1.start(t); n1.stop(t + 0.12);
+
+  // Layer 2: fabric rustle — mid-band texture
+  const n2 = audioCtx.createBufferSource();
+  n2.buffer = buffer;
+  const bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.setValueAtTime(1800, t + 0.01);
+  bp.frequency.exponentialRampToValueAtTime(700, t + 0.18);
+  bp.Q.value = 0.5;
+  const g2 = audioCtx.createGain();
+  g2.gain.setValueAtTime(0.001, t);
+  g2.gain.linearRampToValueAtTime(0.0025, t + 0.04);
+  g2.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+  n2.connect(bp); bp.connect(g2); g2.connect(audioCtx.destination);
+  n2.start(t); n2.stop(t + 0.24);
+
+  // Layer 3: soft air displacement — cloth pushing air
+  const n3 = audioCtx.createBufferSource();
+  n3.buffer = buffer;
+  const lp2 = audioCtx.createBiquadFilter();
+  lp2.type = 'lowpass';
+  lp2.frequency.setValueAtTime(800, t + 0.02);
+  lp2.frequency.exponentialRampToValueAtTime(200, t + 0.2);
+  lp2.Q.value = 0.2;
+  const g3 = audioCtx.createGain();
+  g3.gain.setValueAtTime(0.001, t);
+  g3.gain.linearRampToValueAtTime(0.0025, t + 0.05);
+  g3.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
+  n3.connect(lp2); lp2.connect(g3); g3.connect(audioCtx.destination);
+  n3.start(t); n3.stop(t + dur);
 }
 
 export default function Home() {
@@ -885,8 +927,9 @@ export default function Home() {
   const [onHome, setOnHome] = useState(true);
   const leverRef = useRef<PanelLeverHandle>(null);
   const programmaticScroll = useRef(false);
+  const scrollAnimId = useRef(0);
 
-  const smoothScrollTo = (target: number, duration = 800) => {
+  const smoothScrollTo = (target: number, duration = 800, onComplete?: () => void) => {
     const html = document.documentElement;
     const body = document.body;
     const vertical = isMobile;
@@ -894,11 +937,13 @@ export default function Home() {
       ? (window.scrollY || html.scrollTop || body.scrollTop)
       : (html.scrollLeft || body.scrollLeft || window.scrollX);
     const diff = target - start;
-    if (Math.abs(diff) < 1) return;
+    if (Math.abs(diff) < 1) { onComplete?.(); return; }
     programmaticScroll.current = true;
+    const id = ++scrollAnimId.current;
     const startTime = performance.now();
 
     const step = (currentTime: number) => {
+      if (scrollAnimId.current !== id) return; // cancelled by newer scroll
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const ease = progress < 1
@@ -915,6 +960,7 @@ export default function Home() {
         requestAnimationFrame(step);
       } else {
         programmaticScroll.current = false;
+        onComplete?.();
       }
     };
     requestAnimationFrame(step);
@@ -923,14 +969,12 @@ export default function Home() {
   const scrollToInfo = () => {
     const infoPanel = document.querySelector('.info-panel') as HTMLElement;
     if (infoPanel) {
-      smoothScrollTo(isMobile ? infoPanel.offsetTop : infoPanel.offsetLeft);
+      smoothScrollTo(isMobile ? infoPanel.offsetTop : infoPanel.offsetLeft, 800, () => setOnHome(false));
     }
-    setOnHome(false);
   };
 
   const scrollToHome = () => {
-    smoothScrollTo(0);
-    setOnHome(true);
+    smoothScrollTo(0, 800, () => setOnHome(true));
   };
 
   // Sync lever with scroll position (only for user-initiated scroll)
@@ -1005,32 +1049,37 @@ export default function Home() {
     };
   }, [isMobile]);
 
-  // Shift-held state for visual feedback
+  // Shift/Enter held state for visual feedback
   const [shiftHeld, setShiftHeld] = useState(false);
+  const [enterHeld, setEnterHeld] = useState(false);
 
   // Easter egg: hold Shift+Enter for 5s
   const [showWatModal, setShowWatModal] = useState(false);
   const shiftEnterStart = useRef<number | null>(null);
   const watTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Enter key toggles between panels + track shift
+  // Enter key toggles between panels + track shift/enter
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Shift') setShiftHeld(true);
-      if (e.key === 'Enter' && e.shiftKey && !e.metaKey && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
-        e.preventDefault();
-        leverRef.current?.triggerSnap();
-        if (!shiftEnterStart.current) {
-          shiftEnterStart.current = Date.now();
-          watTimer.current = setTimeout(() => {
-            setShowWatModal(true);
-            shiftEnterStart.current = null;
-          }, 5000);
+      if (e.key === 'Enter' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+        setEnterHeld(true);
+        if (e.shiftKey && !e.metaKey && !e.ctrlKey) {
+          e.preventDefault();
+          leverRef.current?.triggerSnap();
+          if (!shiftEnterStart.current) {
+            shiftEnterStart.current = Date.now();
+            watTimer.current = setTimeout(() => {
+              setShowWatModal(true);
+              shiftEnterStart.current = null;
+            }, 5700);
+          }
         }
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'Shift') setShiftHeld(false);
+      if (e.key === 'Enter') setEnterHeld(false);
       if (e.key === 'Enter' || e.key === 'Shift') {
         shiftEnterStart.current = null;
         if (watTimer.current) { clearTimeout(watTimer.current); watTimer.current = null; }
@@ -1038,6 +1087,7 @@ export default function Home() {
     };
     const handleBlur = () => {
       setShiftHeld(false);
+      setEnterHeld(false);
       shiftEnterStart.current = null;
       if (watTimer.current) { clearTimeout(watTimer.current); watTimer.current = null; }
     };
@@ -1107,9 +1157,10 @@ export default function Home() {
       <PanelLever
         ref={leverRef}
         onHome={onHome}
-        onToggle={() => { if (onHome) scrollToInfo(); else scrollToHome(); }}
+        onToggle={(target) => { if (target === 'info') scrollToInfo(); else scrollToHome(); }}
         isMobile={isMobile}
         shiftHeld={shiftHeld}
+        enterHeld={enterHeld}
         onSnap={playTick}
       />
       {!isMobile && showControls && heldKeys.length > 0 && (

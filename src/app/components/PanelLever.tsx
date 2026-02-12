@@ -18,22 +18,23 @@ export interface PanelLeverHandle {
 
 interface PanelLeverProps {
   onHome: boolean;
-  onToggle: () => void;
+  onToggle: (target: "home" | "info") => void;
   isMobile: boolean;
   shiftHeld: boolean;
+  enterHeld: boolean;
   onSnap?: () => void;
 }
 
 const PanelLever = forwardRef<PanelLeverHandle, PanelLeverProps>(
-  function PanelLever({ onHome, onToggle, isMobile, shiftHeld, onSnap }, ref) {
+  function PanelLever({ onHome, onToggle, isMobile, shiftHeld, enterHeld, onSnap }, ref) {
     const [phase, setPhase] = useState<Phase>("idle");
     const [visualPos, setVisualPos] = useState<VisualPos>(
       onHome ? "home" : "info"
     );
 
-    // Sync visual position with prop when idle
+    // Sync visual position with prop when idle (skip during snap guard)
     useEffect(() => {
-      if (phase === "idle") {
+      if (phase === "idle" && !snapGuard.current) {
         setVisualPos(onHome ? "home" : "info");
       }
     }, [onHome, phase]);
@@ -41,6 +42,7 @@ const PanelLever = forwardRef<PanelLeverHandle, PanelLeverProps>(
     const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const snapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const snapGuard = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const clearTimers = useCallback(() => {
       if (holdTimer.current) { clearTimeout(holdTimer.current); holdTimer.current = null; }
@@ -56,7 +58,11 @@ const PanelLever = forwardRef<PanelLeverHandle, PanelLeverProps>(
       const target: VisualPos = visualPos === "home" ? "info" : "home";
       setVisualPos(target);
       setPhase("snapping");
-      onToggle();
+      onToggle(target);
+
+      // Guard: don't let idle-sync override visualPos until scroll completes
+      if (snapGuard.current) clearTimeout(snapGuard.current);
+      snapGuard.current = setTimeout(() => { snapGuard.current = null; }, 1000);
 
       snapTimer.current = setTimeout(() => {
         setPhase("settling");
@@ -102,12 +108,13 @@ const PanelLever = forwardRef<PanelLeverHandle, PanelLeverProps>(
 
     // Left = landing, right = home
     const isLeft = visualPos === "home";
+    const anticipating = phase === "idle" && (shiftHeld !== enterHeld); // exactly one held
 
     const leverClasses = [
       "panel-lever",
-      `panel-lever--${phase}`,
+      `panel-lever--${anticipating ? "holding" : phase}`,
       isLeft ? "panel-lever--left" : "panel-lever--right",
-      shiftHeld && phase === "idle" ? "panel-lever--ready" : "",
+      anticipating ? "panel-lever--ready" : "",
     ]
       .filter(Boolean)
       .join(" ");
