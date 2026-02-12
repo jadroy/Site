@@ -892,72 +892,6 @@ export default function Home() {
     };
   }, [onLanding]);
 
-  // Peek toward next panel while Shift is held
-  const peekRef = useRef<number | null>(null);
-  const peekActive = useRef(false);
-
-  useEffect(() => {
-    if (isMobile) return;
-
-    if (shiftHeld) {
-      const html = document.documentElement;
-      const body = document.body;
-      const vertical = false; // desktop only
-      const current = html.scrollLeft || body.scrollLeft || window.scrollX;
-      const peekAmount = 60;
-      const target = onLanding ? current + peekAmount : current - peekAmount;
-
-      peekActive.current = true;
-      peekRef.current = current;
-
-      // Smooth nudge toward target
-      const start = current;
-      const diff = target - start;
-      const startTime = performance.now();
-      const duration = 350;
-
-      const step = (now: number) => {
-        if (!peekActive.current) return;
-        const elapsed = now - startTime;
-        const t = Math.min(elapsed / duration, 1);
-        const ease = t < 1 ? t * (2 - t) : 1; // ease-out quad
-        const val = start + diff * ease;
-        html.scrollLeft = val;
-        body.scrollLeft = val;
-        if (t < 1) requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
-    } else if (peekActive.current && peekRef.current !== null) {
-      // Return to original position
-      const html = document.documentElement;
-      const body = document.body;
-      const current = html.scrollLeft || body.scrollLeft || window.scrollX;
-      const target = peekRef.current;
-
-      peekActive.current = false;
-
-      const start = current;
-      const diff = target - start;
-      if (Math.abs(diff) < 1) return;
-      const startTime = performance.now();
-      const duration = 300;
-
-      const step = (now: number) => {
-        if (peekActive.current) return; // new peek started, bail
-        const elapsed = now - startTime;
-        const t = Math.min(elapsed / duration, 1);
-        const ease = t < 1 ? t * (2 - t) : 1;
-        const val = start + diff * ease;
-        html.scrollLeft = val;
-        body.scrollLeft = val;
-        if (t < 1) requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
-
-      peekRef.current = null;
-    }
-  }, [shiftHeld, isMobile, onLanding]);
-
   // Custom crosshair cursor
   const crosshairRef = useRef<HTMLDivElement>(null);
 
@@ -993,7 +927,11 @@ export default function Home() {
     };
   }, [isMobile]);
 
-  const statementText = "Roy Jad, San Francisco — Designer building tools, interfaces, and objects. Drawn to things that feel considered and stay out of the way. Currently exploring calm technology.";
+  const statementLines = [
+    "Creative technologist building tools, interfaces, and objects.",
+    "Drawn to things that feel considered and stay out of the way.",
+    "Currently exploring calm technology.",
+  ];
 
   if (!booted) {
     return <BootSequence onComplete={handleBootComplete} />;
@@ -1265,78 +1203,75 @@ export default function Home() {
         } as React.CSSProperties}
       >
         <div
-          className={`home-container${docExpanded ? ' home-container-expanded' : ''}`}
+          className="home-container"
           ref={homeContainerRef}
-          onClick={() => { if (!docExpanded) setDocExpanded(true); }}
+          onClick={() => { if (onLanding) { scrollToHome(); } }}
         >
-        {docExpanded && (
-          <button className="doc-close" onClick={(e) => { e.stopPropagation(); setDocExpanded(false); }}>
-            Close
-          </button>
-        )}
+        {/* Social links — top right of doc */}
+        <div className="page-links">
+          <a href="mailto:jadroy77@gmail.com" className="page-link-circle" title="Email">Em</a>
+          <a href="https://x.com/jadroy2" className="page-link-circle" target="_blank" rel="noopener noreferrer" title="Twitter">Tw</a>
+          <a href="https://www.linkedin.com/in/royjad/" className="page-link-circle" target="_blank" rel="noopener noreferrer" title="LinkedIn">Li</a>
+        </div>
         <div className="home-grid">
           {/* Statement — spans full width */}
           <section className="home-section home-section-statement intro-fade">
-            <p className={`statement-text statement-weight-${statementWeight}`}>{statementText}</p>
-          </section>
-
-          {/* Work / Convictions / Links — 4-column row */}
-          <section className="home-section home-section-info intro-fade">
-            <div className="info-row">
-              <div className="info-col">
-                <h2 className="section-label">Work</h2>
-                <a href="https://context.ai" className="work-card" target="_blank" rel="noopener noreferrer">
-                  <span className="company">Context</span>
-                  <span className="years-inline">Founding Designer {showYears && '· 2025'}</span>
-                </a>
-                <div className="work-card">
-                  <span className="company">Various companies</span>
-                  <span className="years-inline">Independent Contractor {showYears && '· 2021–2025'}</span>
-                </div>
-              </div>
-              <div className="info-col">
-                <h2 className="section-label">Convictions</h2>
-                <div className="line"><span className="conviction-item">Self-driving cars are necessary</span></div>
-                <div className="line"><span className="conviction-item">Clarity and intentionality are core to a good life</span></div>
-                <div className="line"><span className="conviction-item">Spatial computing is the future of interfaces</span></div>
-              </div>
-              <div className="info-col">
-                <h2 className="section-label">Links</h2>
-                <div className="section-links">
-                  <a href="mailto:jadroy77@gmail.com">Email</a>
-                  <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer">Twitter</a>
-                  <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-                </div>
-              </div>
-              <div className="info-col"></div>
+            <h2 className="section-label">About</h2>
+            <div className={`statement-text statement-weight-${statementWeight}`}>
+              {statementLines.map((line, i) => <div key={i}>{line}</div>)}
             </div>
           </section>
 
-          {/* Case Studies — full width row */}
+          {/* Work */}
+          <section className="home-section home-section-full intro-fade">
+            <h2 className="section-label">Work</h2>
+            <div className="work-row">
+              <a href="https://context.ai" className="work-card" target="_blank" rel="noopener noreferrer">
+                <span className="company">Context</span>
+                <span className="years-inline">Founding Designer {showYears && '· 2025'}</span>
+              </a>
+              <div className="work-card">
+                <span className="company">Various companies</span>
+                <span className="years-inline">Independent Contractor {showYears && '· 2021–2025'}</span>
+              </div>
+            </div>
+          </section>
+
+          {/* Convictions */}
+          <section className="home-section home-section-full intro-fade">
+            <h2 className="section-label">Convictions</h2>
+            <div className="conviction-item">Self-driving cars are necessary</div>
+            <div className="conviction-item">Clarity and intentionality are core to a good life</div>
+            <div className="conviction-item">Spatial computing is the future of interfaces</div>
+          </section>
+
+          {/* Case Studies */}
           <section className="home-section home-section-cases intro-fade">
             <h2 className="section-label">Case Studies</h2>
             <div className="case-cards">
               <a href="https://humanoid-index.com" className="case-card" target="_blank" rel="noopener noreferrer">
-                <div className="case-card-text"><span className="company">Humanoid Index</span><span className="years-inline">A catalog of humanoid robots</span></div>
                 <img className="case-card-img" src="/Humanoid Index/CleanShot 2026-02-06 at 14.40.42@2x.png" alt="Humanoid Index" />
+                <div className="case-card-text"><span className="company">Humanoid Index</span><span className="years-inline">A catalog of humanoid robots</span></div>
               </a>
               <a href="https://context.ai" className="case-card" target="_blank" rel="noopener noreferrer">
-                <div className="case-card-text"><span className="company">Context</span><span className="years-inline">Founding Designer</span></div>
                 <img className="case-card-img" src="/Context/Landing Hero.png" alt="Context" />
+                <div className="case-card-text"><span className="company">Context</span><span className="years-inline">Founding Designer</span></div>
               </a>
               <div className="case-card">
-                <div className="case-card-text"><span className="company">Share</span><span className="years-inline">Phone-native work sharing</span></div>
                 <img className="case-card-img" src="/Share/Share Work - Cover (1).png" alt="Share" />
+                <div className="case-card-text"><span className="company">Share</span><span className="years-inline">Phone-native work sharing</span></div>
               </div>
               <div className="case-card">
-                <div className="case-card-text"><span className="company">IRL Projects</span><span className="years-inline">Weather Display, Doorknob</span></div>
                 <img className="case-card-img" src="/Esp32-weatherdisplay/B83BE970-9380-4464-A007-CD0E7A8B7CD2_1_105_c.jpeg" alt="IRL Projects" style={{ objectPosition: 'bottom' }} />
+                <div className="case-card-text"><span className="company">IRL Projects</span><span className="years-inline">Weather Display, Doorknob</span></div>
               </div>
             </div>
           </section>
+
         </div>
         </div>
       </main>
+
       {/* Auto-dark mode notification */}
       {autoDarkNotice && (
         <div className="auto-dark-notice">

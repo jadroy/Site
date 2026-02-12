@@ -129,9 +129,7 @@ const PanelLever = forwardRef<PanelLeverHandle, PanelLeverProps>(
 
         {/* Track with handle */}
         <div className="panel-lever__track">
-          <div className="panel-lever__notch panel-lever__notch--left" />
           <div className="panel-lever__handle" />
-          <div className="panel-lever__notch panel-lever__notch--right" />
         </div>
 
         {/* Right label */}

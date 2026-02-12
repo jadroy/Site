@@ -42,7 +42,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${GeistSans.variable} ${GeistMono.variable} ${ibmPlexMono.variable} ${saans.variable} ${GeistPixelLine.variable} ${departureMono.variable}`}>
+      <body suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable} ${ibmPlexMono.variable} ${saans.variable} ${GeistPixelLine.variable} ${departureMono.variable}`}>
         {children}
         <Analytics />
       </body>
