@@ -1463,7 +1463,7 @@ export default function Home() {
             <h2 className="section-label">Case Studies</h2>
             <div className="case-cards">
               {[
-                { href: "https://humanoid-index.com", img: "/Humanoid Index/CleanShot 2026-02-06 at 14.40.42@2x.png", alt: "Humanoid Index", title: "Humanoid Index", sub: "A catalog of humanoid robots" },
+                { href: "https://humanoids-index.com", img: "/Humanoid Index/CleanShot 2026-02-06 at 14.40.42@2x.png", alt: "Humanoid Index", title: "Humanoid Index", sub: "A catalog of humanoid robots" },
                 { href: "https://context.ai", img: "/Context/Context landing hero.png", alt: "Context", title: "Context", sub: "Founding Designer", imgStyle: { objectFit: 'contain' as const, background: '#f7f7f7' } },
                 { img: "/Share/Share Work - Cover (1).png", alt: "Share", title: "Share", sub: "Phone-native work sharing" },
                 { img: "/Esp32-weatherdisplay/B83BE970-9380-4464-A007-CD0E7A8B7CD2_1_105_c.jpeg", alt: "IRL Projects", title: "IRL Projects", sub: "ESP32 E-Ink Weather Display", imgStyle: { objectPosition: 'bottom' } },

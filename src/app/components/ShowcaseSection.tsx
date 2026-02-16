@@ -93,7 +93,7 @@ const sections: SectionData[] = [
   {
     title: "Humanoid Index",
     lines: [
-      <><a href="https://humanoid-index.com" target="_blank" rel="noopener noreferrer" className="showcase-link">humanoid-index.com</a></>,
+      <><a href="https://humanoids-index.com" target="_blank" rel="noopener noreferrer" className="showcase-link">humanoids-index.com</a></>,
       <>I curated a list of humanoid robots</>,
     ],
     items: humanoidImages,
