@@ -154,21 +154,6 @@ export default function StatusBar({ currentSection }: { currentSection: string }
       updateDaylight(40, tzOffset * 15);
     }, 60_000);
 
-    // Refine with geolocation if available
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          updateDaylight(latitude, longitude);
-          clearInterval(daylightInterval);
-          geoIntervalRef.current = setInterval(() => {
-            updateDaylight(latitude, longitude);
-          }, 60_000);
-        },
-        () => {}, // fallback already active
-        { timeout: 3000 }
-      );
-    }
 
     const onScroll = () => {
       setIsScrolling(true);

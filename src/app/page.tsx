@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect, useLayoutEffect, ReactNode } from "react";
 import StatusBar from "./components/StatusBar";
-import BootSequence from "./components/BootSequence";
-import PanelLever, { type PanelLeverHandle } from "./components/PanelLever";
+
+import TabBar, { type PanelId, PANELS } from "./components/TabBar";
 import DotField from "./components/DotField";
 
 type CharData = { char: string; opacity: number };
@@ -433,7 +433,7 @@ function playTick() {
 }
 
 export default function Home() {
-  const [booted, setBooted] = useState(false);
+
   const [currentTime, setCurrentTime] = useState('');
 
   useEffect(() => {
@@ -443,9 +443,6 @@ export default function Home() {
     return () => clearInterval(id);
   }, []);
 
-  const handleBootComplete = () => {
-    setBooted(true);
-  };
 
   const originalName = "Roy Jad";
   const [chars, setChars] = useState<CharData[]>(
@@ -539,13 +536,314 @@ export default function Home() {
     return () => mql.removeEventListener("change", onChange as (e: MediaQueryListEvent) => void);
   }, []);
 
+  // Reveal state for entrance animation
+  const [revealed, setRevealed] = useState(false);
+  const homePanelRef = useRef<HTMLDivElement>(null);
+
+  // Reset scroll to left edge on mount
+  useEffect(() => {
+    if (!isMobile) {
+      document.documentElement.scrollLeft = 0;
+    }
+  }, []);
+
+  // Add .scroll-driven class on mount (desktop only) to disable CSS transitions
+  useEffect(() => {
+    if (isMobile) return;
+    const container = containerRef.current;
+    if (!container) return;
+    container.classList.add('scroll-driven');
+    return () => container.classList.remove('scroll-driven');
+  }, [isMobile]);
+
+  // Vertical scroll → horizontal scroll (desktop only)
+  useEffect(() => {
+    if (isMobile) return;
+    const onWheel = (e: WheelEvent) => {
+      // Only convert vertical wheel to horizontal when it's predominantly vertical
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        const maxScroll = document.documentElement.scrollWidth - window.innerWidth;
+        if (maxScroll > 0) {
+          e.preventDefault();
+          document.documentElement.scrollLeft += e.deltaY;
+        }
+      }
+    };
+    window.addEventListener('wheel', onWheel, { passive: false });
+    return () => window.removeEventListener('wheel', onWheel);
+  }, [isMobile]);
+
+  // Drag-to-scroll with momentum (desktop only)
+  useEffect(() => {
+    if (isMobile) return;
+
+    let isPointerDown = false;
+    let isDragActive = false;
+    let startX = 0;
+    let startScrollLeft = 0;
+    let velocityX = 0;
+    let momentumRaf: number;
+    const velocityHistory: { dx: number; dt: number }[] = [];
+
+    const DRAG_THRESHOLD = 4;
+    const FRICTION = 0.95;
+    const MIN_VELOCITY = 0.5;
+    const MAX_HISTORY = 5;
+
+    const cancelMomentum = () => {
+      cancelAnimationFrame(momentumRaf);
+      velocityX = 0;
+    };
+
+    const onPointerDown = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      if (e.shiftKey) return;
+      const target = e.target as HTMLElement;
+      if (target.closest('a, button, input, select, textarea, label, .scroll-slider-handle, .scroll-slider-track, [role="button"], .control-panel, .panel-lever')) return;
+
+      cancelMomentum();
+      isPointerDown = true;
+      isDragActive = false;
+      startX = e.clientX;
+      startScrollLeft = document.documentElement.scrollLeft;
+      velocityHistory.length = 0;
+    };
+
+    let lastX = 0;
+    let lastTime = 0;
+
+    const onPointerMove = (e: MouseEvent) => {
+      if (!isPointerDown) return;
+
+      const dx = e.clientX - startX;
+
+      if (!isDragActive) {
+        if (Math.abs(dx) < DRAG_THRESHOLD) return;
+        isDragActive = true;
+        document.body.classList.add('drag-scrolling');
+        lastX = e.clientX;
+        lastTime = performance.now();
+      }
+
+      e.preventDefault();
+
+      const now = performance.now();
+      const dt = now - lastTime;
+      const moveDx = e.clientX - lastX;
+
+      if (dt > 0) {
+        velocityHistory.push({ dx: moveDx, dt });
+        if (velocityHistory.length > MAX_HISTORY) velocityHistory.shift();
+      }
+
+      lastX = e.clientX;
+      lastTime = now;
+
+      document.documentElement.scrollLeft = startScrollLeft - dx;
+    };
+
+    // Swallow click events that fire right after a drag
+    let didDrag = false;
+    const onClick = (e: MouseEvent) => {
+      if (didDrag) {
+        e.preventDefault();
+        e.stopPropagation();
+        didDrag = false;
+      }
+    };
+
+    const onPointerUp = () => {
+      if (!isPointerDown) return;
+      isPointerDown = false;
+
+      if (!isDragActive) return;
+      isDragActive = false;
+      didDrag = true;
+      document.body.classList.remove('drag-scrolling');
+
+      // Compute release velocity from recent history
+      let totalDx = 0;
+      let totalDt = 0;
+      for (const v of velocityHistory) {
+        totalDx += v.dx;
+        totalDt += v.dt;
+      }
+      velocityX = totalDt > 0 ? (totalDx / totalDt) * 16 : 0;
+
+      const applyMomentum = () => {
+        if (Math.abs(velocityX) < MIN_VELOCITY) return;
+
+        const before = document.documentElement.scrollLeft;
+        document.documentElement.scrollLeft -= velocityX;
+        const after = document.documentElement.scrollLeft;
+
+        // Hit an edge — stop
+        if (before === after) {
+          velocityX = 0;
+          return;
+        }
+
+        velocityX *= FRICTION;
+        momentumRaf = requestAnimationFrame(applyMomentum);
+      };
+
+      momentumRaf = requestAnimationFrame(applyMomentum);
+    };
+
+    // Cancel momentum on new wheel input
+    const onWheel = () => cancelMomentum();
+
+    window.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove, { passive: false });
+    window.addEventListener('mouseup', onPointerUp);
+    window.addEventListener('click', onClick, true); // capture phase
+    window.addEventListener('wheel', onWheel, { passive: true });
+
+    return () => {
+      window.removeEventListener('mousedown', onPointerDown);
+      window.removeEventListener('mousemove', onPointerMove);
+      window.removeEventListener('mouseup', onPointerUp);
+      window.removeEventListener('click', onClick, true);
+      window.removeEventListener('wheel', onWheel);
+      cancelMomentum();
+    };
+  }, [isMobile]);
+
+  // Scroll-position-driven panel reveal + edge compression physics
+  useEffect(() => {
+    if (isMobile) return;
+
+    const homeEl = homePanelRef.current;
+    const workEl = workPanelRef.current;
+    const infoEl = mainRef.current;
+    const writingEl = writingPanelRef.current;
+    if (!homeEl || !workEl || !infoEl || !writingEl) return;
+
+    const allPanelEls = [homeEl, workEl, infoEl, writingEl];
+
+    let rafId: number;
+    let prevScroll = window.scrollX;
+    let velocity = 0;
+    // Per-panel spring state — only edge panels get compression
+    const springs = {
+      home: { value: 0, target: 0 },
+      work: { value: 0, target: 0 },
+      info: { value: 0, target: 0 },
+      writing: { value: 0, target: 0 },
+    };
+    let revealedLocal = false;
+
+    const SPRING_STIFFNESS = 0.15;
+    const SPRING_DAMPING = 0.75;
+    const MAX_COMPRESSION = 0.04;
+    const EDGE_ZONE = 150;
+    const REVEAL_THRESHOLD = 70;
+    const REVEAL_PROGRESS_TRIGGER = 0.15;
+
+    const computeProgress = (el: HTMLElement): number => {
+      const rect = el.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const raw = 1 - Math.max(0, rect.left) / vw;
+      return Math.max(0, Math.min(1, raw));
+    };
+
+    const tick = () => {
+      const currentScroll = window.scrollX;
+      velocity = currentScroll - prevScroll;
+      prevScroll = currentScroll;
+
+      const maxScroll = document.documentElement.scrollWidth - window.innerWidth;
+      const distToLeft = currentScroll;
+      const distToRight = maxScroll > 0 ? maxScroll - currentScroll : Infinity;
+
+      // Edge compression: home at left, writing at right
+      if (distToLeft < EDGE_ZONE && velocity < 0 && maxScroll > 0) {
+        const proximity = 1 - distToLeft / EDGE_ZONE;
+        springs.home.target = proximity * Math.min(Math.abs(velocity) / 20, 1) * MAX_COMPRESSION;
+      } else {
+        springs.home.target = 0;
+      }
+
+      if (distToRight < EDGE_ZONE && velocity > 0 && maxScroll > 0) {
+        const proximity = 1 - distToRight / EDGE_ZONE;
+        springs.writing.target = proximity * Math.min(Math.abs(velocity) / 20, 1) * MAX_COMPRESSION;
+      } else {
+        springs.writing.target = 0;
+      }
+
+      // Middle panels: no compression
+      springs.work.target = 0;
+      springs.info.target = 0;
+
+      // Step springs
+      for (const s of Object.values(springs)) {
+        s.value += (s.target - s.value) * SPRING_STIFFNESS;
+        s.value *= SPRING_DAMPING;
+        if (Math.abs(s.value) < 0.0001) s.value = 0;
+      }
+
+      // Apply transforms per panel
+      const panelSpringPairs: [HTMLElement, typeof springs.home][] = [
+        [homeEl, springs.home],
+        [workEl, springs.work],
+        [infoEl, springs.info],
+        [writingEl, springs.writing],
+      ];
+
+      for (const [panel, spring] of panelSpringPairs) {
+        const progress = computeProgress(panel);
+        const smoothed = progress * progress * (3 - 2 * progress); // smoothstep
+        const ty = REVEAL_THRESHOLD * (1 - smoothed);
+        const op = progress > 0.01 ? Math.max(0.35, smoothed) : 0;
+        const scaleY = 1 - spring.value;
+
+        panel.style.transform = `translateY(${ty}px) scaleY(${scaleY})`;
+        panel.style.opacity = `${Math.max(0, Math.min(1, op))}`;
+
+        if (progress > REVEAL_PROGRESS_TRIGGER && !revealedLocal) {
+          revealedLocal = true;
+          setRevealed(true);
+        }
+      }
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(rafId);
+      for (const el of allPanelEls) {
+        el.style.transform = '';
+        el.style.opacity = '';
+      }
+    };
+  }, [isMobile]);
+
+  // Fallback: on mobile, use simple IntersectionObserver for reveal
+  useEffect(() => {
+    if (!isMobile) return;
+    const el = homePanelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setRevealed(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isMobile]);
+
   // Window-bar state
   const [statementWeight, setStatementWeight] = useState<'light' | 'regular' | 'medium'>('regular');
   const [convictionsCollapsed, setConvictionsCollapsed] = useState(false);
   const [showYears, setShowYears] = useState(true);
   const [activeTheme, setActiveTheme] = useState('Default');
   const [fontMode, setFontMode] = useState<'saans' | 'mono'>('saans');
-  const [autoDarkNotice, setAutoDarkNotice] = useState(false);
+  const [autoDarkNotice, setAutoDarkNotice] = useState<false | 'dark' | 'light'>(false);
 
   // Resolve theme synchronously before first paint (localStorage + timezone fallback)
   useLayoutEffect(() => {
@@ -557,7 +855,7 @@ export default function Home() {
     const tzOffset = new Date().getTimezoneOffset() / -60;
     if (isPastSundown(40, tzOffset * 15)) {
       setActiveTheme('Slate');
-      setAutoDarkNotice(true);
+      setAutoDarkNotice('dark');
     }
   }, []);
 
@@ -579,35 +877,10 @@ export default function Home() {
     }
   }, [fontMode]);
 
-  // Refine with precise geolocation if available (async, fires after paint)
-  useEffect(() => {
-    if (localStorage.getItem('rj-theme-pref')) return;
-    if (!navigator.geolocation) return;
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const night = isPastSundown(pos.coords.latitude, pos.coords.longitude);
-        const tzOffset = new Date().getTimezoneOffset() / -60;
-        const fallbackNight = isPastSundown(40, tzOffset * 15);
-        // Only update if geolocation disagrees with the timezone estimate
-        if (night !== fallbackNight) {
-          if (night) {
-            setActiveTheme('Slate');
-            setAutoDarkNotice(true);
-          } else {
-            setActiveTheme('Default');
-            setAutoDarkNotice(false);
-          }
-        }
-      },
-      () => {}, // fallback already applied
-      { timeout: 3000 }
-    );
-  }, []);
-
-  // Auto-dismiss the notice
+  // Auto-dismiss the initial dark notice only
   useEffect(() => {
-    if (!autoDarkNotice) return;
+    if (autoDarkNotice !== 'dark') return;
     const timer = setTimeout(() => setAutoDarkNotice(false), 8000);
     return () => clearTimeout(timer);
   }, [autoDarkNotice]);
@@ -628,7 +901,15 @@ export default function Home() {
   };
 
   const switchToLight = () => {
-    handleThemeChange('Default');
+    setActiveTheme('Default');
+    localStorage.setItem('rj-theme-pref', 'Default');
+    setAutoDarkNotice('light');
+  };
+
+  const switchToDark = () => {
+    setActiveTheme('Slate');
+    localStorage.setItem('rj-theme-pref', 'Slate');
+    setAutoDarkNotice('dark');
   };
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -791,76 +1072,12 @@ export default function Home() {
   const mainRef = useRef<HTMLDivElement>(null);
   const infoContainerRef = useRef<HTMLDivElement>(null);
   const homeContainerRef = useRef<HTMLDivElement>(null);
+  const workPanelRef = useRef<HTMLDivElement>(null);
+  const writingPanelRef = useRef<HTMLDivElement>(null);
+  const workContainerRef = useRef<HTMLDivElement>(null);
+  const writingContainerRef = useRef<HTMLDivElement>(null);
   const [docExpanded, setDocExpanded] = useState(false);
 
-  // Drag-to-scroll between panels (with momentum)
-  const dragScrollRef = useRef({ startX: 0, startScroll: 0, hasMoved: false, lastX: 0, lastTime: 0, velocity: 0 });
-
-  const handleScrollDragStart = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (isMobile) return;
-    if (e.shiftKey) return; // Shift+drag = content position
-    if (e.button !== 0) return;
-    const target = e.target as HTMLElement;
-    if (target.closest('a, button, input, [role="button"], [role="switch"]')) return;
-
-    const html = document.documentElement;
-    const scrollPos = html.scrollLeft || document.body.scrollLeft || window.scrollX;
-    dragScrollRef.current = { startX: e.clientX, startScroll: scrollPos, hasMoved: false, lastX: e.clientX, lastTime: performance.now(), velocity: 0 };
-
-    const onMove = (ev: PointerEvent) => {
-      const now = performance.now();
-      const dt = now - dragScrollRef.current.lastTime;
-      const dx = ev.clientX - dragScrollRef.current.startX;
-      if (Math.abs(dx) > 5) {
-        dragScrollRef.current.hasMoved = true;
-        document.body.style.cursor = 'grabbing';
-        document.body.style.userSelect = 'none';
-      }
-      // Track velocity (px/ms) with smoothing
-      if (dt > 0) {
-        const instantV = (ev.clientX - dragScrollRef.current.lastX) / dt;
-        dragScrollRef.current.velocity = dragScrollRef.current.velocity * 0.4 + instantV * 0.6;
-      }
-      dragScrollRef.current.lastX = ev.clientX;
-      dragScrollRef.current.lastTime = now;
-
-      const newScroll = dragScrollRef.current.startScroll - dx;
-      html.scrollLeft = newScroll;
-      document.body.scrollLeft = newScroll;
-    };
-
-    const onUp = () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-
-      if (dragScrollRef.current.hasMoved) {
-        // Prevent the click that follows pointerup
-        const preventClick = (ev: MouseEvent) => { ev.stopPropagation(); ev.preventDefault(); };
-        window.addEventListener('click', preventClick, { capture: true, once: true });
-
-        // Momentum: project scroll position based on release velocity
-        const v = dragScrollRef.current.velocity; // px/ms (negative = scrolling right)
-        const momentumPx = -v * 600; // project ~600ms of coast (generous)
-        const currentScroll = html.scrollLeft || document.body.scrollLeft || window.scrollX;
-        const projected = currentScroll + momentumPx;
-
-        const infoPanel = document.querySelector('.info-panel') as HTMLElement;
-        if (infoPanel) {
-          const threshold = infoPanel.offsetLeft * 0.335;
-          if (projected > threshold) {
-            scrollToInfo();
-          } else {
-            scrollToHome();
-          }
-        }
-      }
-    };
-
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-  };
 
   // Subtle tilt on info container (disabled when expanded)
   useEffect(() => {
@@ -886,7 +1103,7 @@ export default function Home() {
       el.removeEventListener('mouseleave', onLeave);
       el.style.transform = '';
     };
-  }, [isMobile, booted, docExpanded]);
+  }, [isMobile, docExpanded]);
 
   // Subtle tilt on home container
   useEffect(() => {
@@ -912,7 +1129,33 @@ export default function Home() {
       el.removeEventListener('mouseleave', onLeave);
       el.style.transform = '';
     };
-  }, [isMobile, booted]);
+  }, [isMobile]);
+
+  // Subtle tilt on work + writing containers
+  useEffect(() => {
+    if (isMobile) return;
+    const els = [workContainerRef.current, writingContainerRef.current].filter(Boolean) as HTMLElement[];
+    if (els.length === 0) return;
+
+    const handlers: (() => void)[] = [];
+    for (const el of els) {
+      const onMove = (e: MouseEvent) => {
+        const rect = el.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        el.style.transform = `perspective(1200px) rotateX(${-y * 0.4}deg) rotateY(${x * 0.4}deg) scale(1.005) translateY(-2px)`;
+      };
+      const onLeave = () => { el.style.transform = ''; };
+      el.addEventListener('mousemove', onMove);
+      el.addEventListener('mouseleave', onLeave);
+      handlers.push(() => {
+        el.removeEventListener('mousemove', onMove);
+        el.removeEventListener('mouseleave', onLeave);
+        el.style.transform = '';
+      });
+    }
+    return () => { handlers.forEach(fn => fn()); };
+  }, [isMobile]);
 
   // Escape to close expanded doc
   useEffect(() => {
@@ -924,75 +1167,104 @@ export default function Home() {
     return () => window.removeEventListener('keydown', onKey);
   }, [docExpanded]);
 
-  const [onHome, setOnHome] = useState(true);
-  const leverRef = useRef<PanelLeverHandle>(null);
-  const programmaticScroll = useRef(false);
-  const scrollAnimId = useRef(0);
+  const [activePanel, setActivePanel] = useState<PanelId>('info');
+  // Home panel hidden — not in navigation
+  const [showScrollHint, setShowScrollHint] = useState(false);
+  const scrollHintDismissed = useRef(false);
 
-  const smoothScrollTo = (target: number, duration = 800, onComplete?: () => void) => {
-    const html = document.documentElement;
-    const body = document.body;
-    const vertical = isMobile;
-    const start = vertical
-      ? (window.scrollY || html.scrollTop || body.scrollTop)
-      : (html.scrollLeft || body.scrollLeft || window.scrollX);
-    const diff = target - start;
-    if (Math.abs(diff) < 1) { onComplete?.(); return; }
-    programmaticScroll.current = true;
-    const id = ++scrollAnimId.current;
-    const startTime = performance.now();
+  // Dismiss hint on first panel change or after timeout
+  useEffect(() => {
+    const timer = setTimeout(() => setShowScrollHint(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
-    const step = (currentTime: number) => {
-      if (scrollAnimId.current !== id) return; // cancelled by newer scroll
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const ease = progress < 1
-        ? 1 - Math.pow(1 - progress, 3) * (1 - progress * 0.3)
-        : 1;
-      const val = start + diff * ease;
-      if (vertical) {
-        window.scrollTo(0, val);
-      } else {
-        html.scrollLeft = val;
-        body.scrollLeft = val;
-      }
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      } else {
-        programmaticScroll.current = false;
-        onComplete?.();
-      }
-    };
-    requestAnimationFrame(step);
+  useEffect(() => {
+    if (scrollHintDismissed.current) return;
+    if (activePanel === 'home') {
+      scrollHintDismissed.current = true;
+      setShowScrollHint(false);
+    }
+  }, [activePanel]);
+
+  const panelSelectorMap: Record<PanelId, string> = {
+    home: '.home-panel',
+    work: '.work-panel',
+    info: '.info-panel',
+    writing: '.writing-panel',
   };
 
-  const scrollToInfo = () => {
-    const infoPanel = document.querySelector('.info-panel') as HTMLElement;
-    if (infoPanel) {
-      smoothScrollTo(isMobile ? infoPanel.offsetTop : infoPanel.offsetLeft, 800, () => setOnHome(false));
+  const scrollToPanel = (panelId: PanelId) => {
+    setActivePanel(panelId);
+    const el = document.querySelector(panelSelectorMap[panelId]) as HTMLElement;
+    if (!el) return;
+    if (isMobile) {
+      window.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
+    } else {
+      document.documentElement.scrollTo({ left: el.offsetLeft, behavior: 'smooth' });
     }
   };
 
-  const scrollToHome = () => {
-    smoothScrollTo(0, 800, () => setOnHome(true));
-  };
-
-  // Sync lever with scroll position (only for user-initiated scroll)
+  // Keyboard navigation: arrow keys + number keys
   useEffect(() => {
-    const onScroll = () => {
-      if (programmaticScroll.current) return;
-      const infoPanel = document.querySelector('.info-panel') as HTMLElement;
-      if (!infoPanel) return;
-      const scrollPos = isMobile
-        ? window.scrollY
-        : (document.documentElement.scrollLeft || document.body.scrollLeft || window.scrollX);
-      const threshold = isMobile ? infoPanel.offsetTop : infoPanel.offsetLeft;
-      const halfway = threshold / 2;
-      setOnHome(scrollPos < halfway);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      // Number keys: 1, 2, 3... map to panels by index
+      const num = parseInt(e.key, 10);
+      if (num >= 1 && num <= PANELS.length) {
+        e.preventDefault();
+        scrollToPanel(PANELS[num - 1]);
+        playTick();
+        return;
+      }
+
+      // Arrow keys: step through panels
+      if (!e.shiftKey) {
+        const idx = PANELS.indexOf(activePanel);
+        if (e.key === 'ArrowRight' && idx < PANELS.length - 1) {
+          e.preventDefault();
+          scrollToPanel(PANELS[idx + 1]);
+          playTick();
+        } else if (e.key === 'ArrowLeft' && idx > 0) {
+          e.preventDefault();
+          scrollToPanel(PANELS[idx - 1]);
+          playTick();
+        }
+      }
     };
-    document.addEventListener('scroll', onScroll, true);
-    return () => document.removeEventListener('scroll', onScroll, true);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [activePanel, isMobile]);
+
+  // Sync active panel with scroll position — nearest panel wins
+  useEffect(() => {
+    const selectors: [PanelId, string][] = [
+      ['home', '.home-panel'],
+      ['info', '.info-panel'],
+      ['work', '.work-panel'],
+      ['writing', '.writing-panel'],
+    ];
+    const onScroll = () => {
+      const scrollPos = isMobile ? window.scrollY : document.documentElement.scrollLeft;
+      let closest: PanelId = 'home';
+      let minDist = Infinity;
+      for (const [id, sel] of selectors) {
+        const el = document.querySelector(sel) as HTMLElement;
+        if (!el) continue;
+        const start = isMobile ? el.offsetTop : el.offsetLeft;
+        const dist = Math.abs(scrollPos - start);
+        if (dist < minDist) {
+          minDist = dist;
+          closest = id;
+        }
+      }
+      setActivePanel(closest);
+    };
+    document.addEventListener('scroll', onScroll, { passive: true });
+    return () => document.removeEventListener('scroll', onScroll);
   }, [isMobile]);
+
 
   // Key tracker
   const [heldKeys, setHeldKeys] = useState<string[]>([]);
@@ -1049,24 +1321,26 @@ export default function Home() {
     };
   }, [isMobile]);
 
-  // Shift/Enter held state for visual feedback
-  const [shiftHeld, setShiftHeld] = useState(false);
-  const [enterHeld, setEnterHeld] = useState(false);
-
   // Easter egg: hold Shift+Enter for 5s
   const [showWatModal, setShowWatModal] = useState(false);
   const shiftEnterStart = useRef<number | null>(null);
   const watTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Enter key toggles between panels + track shift/enter
+  // Keep a ref to activePanel so Shift+Enter handler can read it without stale closures
+  const activePanelRef = useRef(activePanel);
+  activePanelRef.current = activePanel;
+
+  // Shift+Enter cycles to next panel + track shift/enter held state
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') setShiftHeld(true);
       if (e.key === 'Enter' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
-        setEnterHeld(true);
         if (e.shiftKey && !e.metaKey && !e.ctrlKey) {
           e.preventDefault();
-          leverRef.current?.triggerSnap();
+          // Cycle through panels
+          const currentIdx = PANELS.indexOf(activePanelRef.current);
+          const next = PANELS[(currentIdx + 1) % PANELS.length];
+          scrollToPanel(next);
+          playTick();
           if (!shiftEnterStart.current) {
             shiftEnterStart.current = Date.now();
             watTimer.current = setTimeout(() => {
@@ -1078,16 +1352,12 @@ export default function Home() {
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') setShiftHeld(false);
-      if (e.key === 'Enter') setEnterHeld(false);
       if (e.key === 'Enter' || e.key === 'Shift') {
         shiftEnterStart.current = null;
         if (watTimer.current) { clearTimeout(watTimer.current); watTimer.current = null; }
       }
     };
     const handleBlur = () => {
-      setShiftHeld(false);
-      setEnterHeld(false);
       shiftEnterStart.current = null;
       if (watTimer.current) { clearTimeout(watTimer.current); watTimer.current = null; }
     };
@@ -1143,25 +1413,30 @@ export default function Home() {
     <>Currently exploring <a href="https://en.wikipedia.org/wiki/Calm_technology" target="_blank" rel="noopener noreferrer">calm technology<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a></>,
   ];
 
-  if (!booted) {
-    return <BootSequence onComplete={handleBootComplete} />;
-  }
+  const workProjects = [
+    { name: "Context", role: "Founding Designer", year: "2025", href: "https://context.ai", img: "/Context/Landing Hero.png" },
+    { name: "Humanoid Index", role: "Design + Engineering", year: "2026", href: "https://humanoids-index.com", img: "/Humanoid Index/CleanShot 2026-02-06 at 14.40.42@2x.png" },
+    { name: "Share", role: "Design + Prototyping", year: "2024", img: "/Share/Share Work - Cover (1).png" },
+    { name: "ESP32 Weather Display", role: "Hardware + Software", year: "2024", img: "/Esp32-weatherdisplay/B83BE970-9380-4464-A007-CD0E7A8B7CD2_1_105_c.jpeg" },
+  ];
+
+  const writingEntries = [
+    { title: "On calm technology", date: "2026", excerpt: "Why the best interfaces disappear", href: "/writing" },
+    { title: "Building in public", date: "2025", excerpt: "Lessons from shipping side projects", href: "/writing" },
+    { title: "Design as reduction", date: "2025", excerpt: "Removing until only the essential remains", href: "/writing" },
+  ];
+
 
   return (
     <div
       className="horizontal-scroll-container"
       ref={containerRef}
-      onPointerDown={handleScrollDragStart}
     >
-      <StatusBar currentSection={onHome ? "home" : "info"} />
-      <PanelLever
-        ref={leverRef}
-        onHome={onHome}
-        onToggle={(target) => { if (target === 'info') scrollToInfo(); else scrollToHome(); }}
+      <StatusBar currentSection={activePanel} />
+      <TabBar
+        activePanel={activePanel}
+        onSelect={(panel) => { scrollToPanel(panel); playTick(); }}
         isMobile={isMobile}
-        shiftHeld={shiftHeld}
-        enterHeld={enterHeld}
-        onSnap={playTick}
       />
       {!isMobile && showControls && heldKeys.length > 0 && (
         <div className="key-tracker">
@@ -1178,16 +1453,21 @@ export default function Home() {
       )}
       <div className="noise-overlay" />
 
+      {/* Welcome — entrance */}
+      <div className="welcome-panel">
+        <span className="welcome-name">Roy Jad</span>
+      </div>
+
       {/* Home — typewriter intro */}
-      <div className={`home-panel${showTV ? ' home-tv' : ''}`}>
+      <div ref={homePanelRef} className={`home-panel${showTV ? ' home-tv' : ''}${revealed ? ' revealed' : ''}`}>
         {showTV && <div className="home-scanbar" />}
         {showMemory && <MemorySlideshow fx={memoryFx} />}
-        <div className="home-container" ref={homeContainerRef} onClick={() => { if (!onHome) { scrollToHome(); } }}>
+        <div className="home-container" ref={homeContainerRef} onClick={() => { if (activePanel !== 'home') { scrollToPanel('home'); } }}>
           {!isMobile && showDotField && <DotField />}
           <div className="home-text">
             <div>
               <p className="home-clock">{currentTime}</p>
-              <p className="home-subtitle">Roy Jad <span className="home-sep">/</span> SF, CA</p>
+              <p className="home-subtitle">SF, CA</p>
             </div>
           </div>
         </div>
@@ -1410,7 +1690,7 @@ export default function Home() {
 
       <main
         ref={mainRef}
-        className={`info-panel${docExpanded ? ' doc-expanded' : ''}`}
+        className={`info-panel${docExpanded ? ' doc-expanded' : ''}${revealed ? ' revealed' : ''}`}
         onMouseDown={handleDragStart}
         style={{
           '--base-font-size': `${fontSize}px`,
@@ -1422,7 +1702,7 @@ export default function Home() {
         <div
           className="info-container"
           ref={infoContainerRef}
-          onClick={() => { if (onHome) { scrollToInfo(); } }}
+          onClick={() => { if (activePanel !== 'info') { scrollToPanel('info'); } }}
         >
         <div className="info-grid">
           {/* Statement — spans full width */}
@@ -1520,11 +1800,61 @@ export default function Home() {
         </div>
       </main>
 
+      {/* Work — project cards */}
+      <div ref={workPanelRef} className={`work-panel${revealed ? ' revealed' : ''}`}>
+        <div className="work-container" ref={workContainerRef} onClick={() => { if (activePanel !== 'work') { scrollToPanel('work'); } }}>
+          <section className="info-section">
+            <h2 className="section-label">Projects</h2>
+            <div className="work-panel-cards">
+              {workProjects.map((proj, i) => {
+                const Tag = proj.href ? 'a' : 'div';
+                const linkProps = proj.href ? { href: proj.href, target: "_blank" as const, rel: "noopener noreferrer" } : {};
+                return (
+                  <Tag key={i} className="work-panel-card" {...linkProps}>
+                    {proj.img && <img className="work-panel-card-img" src={proj.img} alt={proj.name} />}
+                    <div className="work-panel-card-text">
+                      <span className="company">{proj.name}{proj.href && <svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg>}</span>
+                      <span className="years-inline">{proj.role}</span>
+                      <span className="years-inline">{proj.year}</span>
+                    </div>
+                  </Tag>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {/* Writing — article list */}
+      <div ref={writingPanelRef} className={`writing-panel${revealed ? ' revealed' : ''}`}>
+        <div className="writing-container" ref={writingContainerRef} onClick={() => { if (activePanel !== 'writing') { scrollToPanel('writing'); } }}>
+          <section className="info-section">
+            <h2 className="section-label">Writing</h2>
+            <div className="writing-panel-entries">
+              {writingEntries.map((entry, i) => (
+                <a key={i} href={entry.href} className="writing-panel-entry">
+                  <span className="writing-panel-title">{entry.title}</span>
+                  <span className="writing-panel-excerpt">{entry.excerpt}</span>
+                  <span className="years-inline">{entry.date}</span>
+                </a>
+              ))}
+            </div>
+          </section>
+          <div className="writing-panel-footer">
+            <a href="/writing">All writing<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a>
+          </div>
+        </div>
+      </div>
+
       {/* Auto-dark mode notification */}
       {autoDarkNotice && (
         <div className="auto-dark-notice">
-          <span className="auto-dark-notice-text">Dark mode — it's past sundown</span>
-          <button className="auto-dark-notice-cta" onClick={switchToLight}>Switch to light</button>
+          <span className="auto-dark-notice-text">
+            {autoDarkNotice === 'dark' ? 'Dark mode — it\u2019s past sundown' : 'Light mode'}
+          </span>
+          <button className="auto-dark-notice-cta" onClick={autoDarkNotice === 'dark' ? switchToLight : switchToDark}>
+            {autoDarkNotice === 'dark' ? 'Switch to light' : 'Switch to dark'}
+          </button>
           <button className="auto-dark-notice-dismiss" onClick={() => setAutoDarkNotice(false)}>✕</button>
         </div>
       )}
@@ -1594,6 +1924,14 @@ export default function Home() {
           }}>
             Reset
           </button>
+        </div>
+      )}
+
+      {/* Scroll hint */}
+      {!isMobile && showScrollHint && (
+        <div className="scroll-hint" onClick={() => scrollToPanel('home')}>
+          <span className="scroll-hint-arrow">&larr;</span>
+          <span className="scroll-hint-text">SCROLL</span>
         </div>
       )}
 
