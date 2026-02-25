@@ -140,8 +140,8 @@ body::after {
    WELCOME PANEL — entrance
    ============================================= */
 .welcome-panel {
-  width: calc(100vw - var(--scroll-buffer) - 200px);
-  min-width: calc(100vw - var(--scroll-buffer) - 200px);
+  width: calc(100vw - var(--scroll-buffer) - 160px);
+  min-width: calc(100vw - var(--scroll-buffer) - 160px);
   height: 100vh;
   flex-shrink: 0;
   display: flex;
@@ -149,12 +149,63 @@ body::after {
   justify-content: center;
 }
 
-.welcome-name {
+.welcome-panel {
+  animation: welcomeFade 0.6s ease 0.5s both;
+}
+
+@keyframes welcomeFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.welcome-name, .closing-text {
   font-size: 18px;
   font-weight: 400;
   letter-spacing: 0.04em;
   color: var(--text);
   text-transform: uppercase;
+}
+
+/* =============================================
+   CLOSING PANEL — bookend
+   ============================================= */
+.closing-panel {
+  width: calc(100vw - var(--scroll-buffer) - 160px);
+  min-width: calc(100vw - var(--scroll-buffer) - 160px);
+  height: 100vh;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.closing-panel.revealed {
+  opacity: 1;
+}
+
+.closing-socials {
+  display: flex;
+  gap: 32px;
+}
+
+.closing-socials a {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+
+.closing-socials a:hover {
+  color: var(--text);
+  border-bottom-color: var(--text-muted);
 }
 
 /* Horizontal scroll container */
@@ -168,7 +219,7 @@ body::after {
   user-select: none;
   -webkit-user-select: none;
   padding-left: var(--scroll-buffer);
-  padding-right: calc(var(--scroll-buffer) + 40vw);
+  padding-right: var(--scroll-buffer);
 }
 
 
@@ -206,10 +257,9 @@ main.info-panel {
   font-weight: 400;
   color: var(--text);
   transform: translateY(70px);
-  opacity: 0;
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   transition-delay: 0.08s;
-  will-change: transform, opacity;
+  will-change: transform;
 }
 
 main.info-panel.revealed {
@@ -239,9 +289,8 @@ main.info-panel.revealed {
   position: relative;
   overflow: hidden;
   transform: translateY(70px);
-  opacity: 0;
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease;
-  will-change: transform, opacity;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
 }
 
 .home-panel.revealed {
@@ -587,9 +636,8 @@ main.info-panel.revealed {
   position: relative;
   overflow: hidden;
   transform: translateY(70px);
-  opacity: 0;
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease;
-  will-change: transform, opacity;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
 }
 
 .work-panel.revealed {
@@ -618,7 +666,7 @@ main.info-panel.revealed {
   letter-spacing: normal;
   text-transform: uppercase;
   color: #777;
-  transform: rotate(-0.08deg);
+  transform: rotate(0.3deg);
   transform-origin: center top;
   transition: transform 0.2s ease-out;
   will-change: transform;
@@ -744,9 +792,8 @@ a.work-panel-card:hover .external-arrow {
   position: relative;
   overflow: hidden;
   transform: translateY(70px);
-  opacity: 0;
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease;
-  will-change: transform, opacity;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
 }
 
 .writing-panel.revealed {
@@ -775,7 +822,7 @@ a.work-panel-card:hover .external-arrow {
   letter-spacing: normal;
   text-transform: uppercase;
   color: #777;
-  transform: rotate(0.1deg);
+  transform: rotate(-0.25deg);
   transform-origin: center top;
   transition: transform 0.2s ease-out;
   will-change: transform;
@@ -3123,7 +3170,8 @@ a.company:hover {
   transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
               top 0.3s cubic-bezier(0.4, 0, 0.2, 1),
               width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+              height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.2s ease;
   pointer-events: none;
 }
 

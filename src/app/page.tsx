@@ -559,18 +559,43 @@ export default function Home() {
   // Vertical scroll → horizontal scroll (desktop only)
   useEffect(() => {
     if (isMobile) return;
+    let wheelReleaseTimer: ReturnType<typeof setTimeout>;
     const onWheel = (e: WheelEvent) => {
       // Only convert vertical wheel to horizontal when it's predominantly vertical
       if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
         const maxScroll = document.documentElement.scrollWidth - window.innerWidth;
         if (maxScroll > 0) {
           e.preventDefault();
-          document.documentElement.scrollLeft += e.deltaY;
+          const currentScroll = document.documentElement.scrollLeft;
+          // At right edge scrolling right — accumulate overscroll
+          if (currentScroll >= maxScroll - 1 && e.deltaY > 0) {
+            isInputActiveRef.current = true;
+            clearTimeout(wheelReleaseTimer);
+            wheelReleaseTimer = setTimeout(() => { isInputActiveRef.current = false; }, 120);
+            // Rubber-band resistance: diminishing returns the further you pull
+            const resistance = 1 / (1 + overscrollXRef.current / 300);
+            overscrollXRef.current = Math.max(0, overscrollXRef.current + e.deltaY * resistance * 0.5);
+          } else {
+            // Scrolling back — bleed off overscroll first
+            if (overscrollXRef.current > 0 && e.deltaY < 0) {
+              overscrollXRef.current = Math.max(0, overscrollXRef.current + e.deltaY * 0.5);
+              if (overscrollXRef.current <= 0) {
+                overscrollXRef.current = 0;
+                isInputActiveRef.current = false;
+              }
+            } else {
+              isInputActiveRef.current = false;
+              document.documentElement.scrollLeft += e.deltaY;
+            }
+          }
         }
       }
     };
     window.addEventListener('wheel', onWheel, { passive: false });
-    return () => window.removeEventListener('wheel', onWheel);
+    return () => {
+      window.removeEventListener('wheel', onWheel);
+      clearTimeout(wheelReleaseTimer);
+    };
   }, [isMobile]);
 
   // Drag-to-scroll with momentum (desktop only)
@@ -639,7 +664,19 @@ export default function Home() {
       lastX = e.clientX;
       lastTime = now;
 
-      document.documentElement.scrollLeft = startScrollLeft - dx;
+      const intendedScroll = startScrollLeft - dx;
+      const maxScroll = document.documentElement.scrollWidth - window.innerWidth;
+      if (intendedScroll > maxScroll) {
+        document.documentElement.scrollLeft = maxScroll;
+        const overAmount = intendedScroll - maxScroll;
+        const resistance = 1 / (1 + overAmount / 400);
+        overscrollXRef.current = overAmount * resistance;
+        isInputActiveRef.current = true;
+      } else {
+        overscrollXRef.current = 0;
+        isInputActiveRef.current = false;
+        document.documentElement.scrollLeft = intendedScroll;
+      }
     };
 
     // Swallow click events that fire right after a drag
@@ -655,6 +692,7 @@ export default function Home() {
     const onPointerUp = () => {
       if (!isPointerDown) return;
       isPointerDown = false;
+      isInputActiveRef.current = false;
 
       if (!isDragActive) return;
       isDragActive = false;
@@ -671,15 +709,29 @@ export default function Home() {
       velocityX = totalDt > 0 ? (totalDx / totalDt) * 16 : 0;
 
       const applyMomentum = () => {
-        if (Math.abs(velocityX) < MIN_VELOCITY) return;
+        if (Math.abs(velocityX) < MIN_VELOCITY) {
+          isInputActiveRef.current = false;
+          return;
+        }
 
         const before = document.documentElement.scrollLeft;
         document.documentElement.scrollLeft -= velocityX;
         const after = document.documentElement.scrollLeft;
 
-        // Hit an edge — stop
+        // Hit right edge — feed remaining momentum into overscroll
+        if (before === after && velocityX < 0) {
+          const resistance = 1 / (1 + overscrollXRef.current / 300);
+          overscrollXRef.current = Math.max(0, overscrollXRef.current + Math.abs(velocityX) * resistance * 0.6);
+          isInputActiveRef.current = true;
+          velocityX *= 0.85; // decay faster when overscrolling
+          momentumRaf = requestAnimationFrame(applyMomentum);
+          return;
+        }
+
+        // Hit left edge — stop
         if (before === after) {
           velocityX = 0;
+          isInputActiveRef.current = false;
           return;
         }
 
@@ -714,12 +766,10 @@ export default function Home() {
     if (isMobile) return;
 
     const homeEl = homePanelRef.current;
-    const workEl = workPanelRef.current;
     const infoEl = mainRef.current;
-    const writingEl = writingPanelRef.current;
-    if (!homeEl || !workEl || !infoEl || !writingEl) return;
+    if (!homeEl || !infoEl) return;
 
-    const allPanelEls = [homeEl, workEl, infoEl, writingEl];
+    const allPanelEls = [homeEl, infoEl];
 
     let rafId: number;
     let prevScroll = window.scrollX;
@@ -727,9 +777,7 @@ export default function Home() {
     // Per-panel spring state — only edge panels get compression
     const springs = {
       home: { value: 0, target: 0 },
-      work: { value: 0, target: 0 },
       info: { value: 0, target: 0 },
-      writing: { value: 0, target: 0 },
     };
     let revealedLocal = false;
 
@@ -756,7 +804,7 @@ export default function Home() {
       const distToLeft = currentScroll;
       const distToRight = maxScroll > 0 ? maxScroll - currentScroll : Infinity;
 
-      // Edge compression: home at left, writing at right
+      // Edge compression: home at left
       if (distToLeft < EDGE_ZONE && velocity < 0 && maxScroll > 0) {
         const proximity = 1 - distToLeft / EDGE_ZONE;
         springs.home.target = proximity * Math.min(Math.abs(velocity) / 20, 1) * MAX_COMPRESSION;
@@ -764,16 +812,14 @@ export default function Home() {
         springs.home.target = 0;
       }
 
-      if (distToRight < EDGE_ZONE && velocity > 0 && maxScroll > 0) {
-        const proximity = 1 - distToRight / EDGE_ZONE;
-        springs.writing.target = proximity * Math.min(Math.abs(velocity) / 20, 1) * MAX_COMPRESSION;
-      } else {
-        springs.writing.target = 0;
-      }
-
-      // Middle panels: no compression
-      springs.work.target = 0;
+      // Info: no compression
       springs.info.target = 0;
+
+      // Spring overscroll back to 0 when no active input
+      if (!isInputActiveRef.current && overscrollXRef.current > 0) {
+        overscrollXRef.current *= 0.88;
+        if (overscrollXRef.current < 0.5) overscrollXRef.current = 0;
+      }
 
       // Step springs
       for (const s of Object.values(springs)) {
@@ -782,23 +828,26 @@ export default function Home() {
         if (Math.abs(s.value) < 0.0001) s.value = 0;
       }
 
+      // Compute overscroll squeeze for writing panel
+      const overscrollSqueeze = overscrollXRef.current > 0
+        ? 1 - Math.min(overscrollXRef.current / 600, 0.35)
+        : 1;
+
       // Apply transforms per panel
       const panelSpringPairs: [HTMLElement, typeof springs.home][] = [
         [homeEl, springs.home],
-        [workEl, springs.work],
         [infoEl, springs.info],
-        [writingEl, springs.writing],
       ];
 
       for (const [panel, spring] of panelSpringPairs) {
         const progress = computeProgress(panel);
         const smoothed = progress * progress * (3 - 2 * progress); // smoothstep
         const ty = REVEAL_THRESHOLD * (1 - smoothed);
-        const op = progress > 0.01 ? Math.max(0.35, smoothed) : 0;
         const scaleY = 1 - spring.value;
 
+        panel.style.transformOrigin = '';
         panel.style.transform = `translateY(${ty}px) scaleY(${scaleY})`;
-        panel.style.opacity = `${Math.max(0, Math.min(1, op))}`;
+        panel.style.opacity = '1';
 
         if (progress > REVEAL_PROGRESS_TRIGGER && !revealedLocal) {
           revealedLocal = true;
@@ -836,6 +885,23 @@ export default function Home() {
     observer.observe(el);
     return () => observer.disconnect();
   }, [isMobile]);
+
+  // Closing panel reveal on scroll into view
+  useEffect(() => {
+    const el = closingPanelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.classList.add('revealed');
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Window-bar state
   const [statementWeight, setStatementWeight] = useState<'light' | 'regular' | 'medium'>('regular');
@@ -1076,6 +1142,9 @@ export default function Home() {
   const writingPanelRef = useRef<HTMLDivElement>(null);
   const workContainerRef = useRef<HTMLDivElement>(null);
   const writingContainerRef = useRef<HTMLDivElement>(null);
+  const closingPanelRef = useRef<HTMLDivElement>(null);
+  const overscrollXRef = useRef(0);
+  const isInputActiveRef = useRef(false);
   const [docExpanded, setDocExpanded] = useState(false);
 
 
@@ -1167,8 +1236,8 @@ export default function Home() {
     return () => window.removeEventListener('keydown', onKey);
   }, [docExpanded]);
 
-  const [activePanel, setActivePanel] = useState<PanelId>('info');
-  // Home panel hidden — not in navigation
+  const [activePanel, setActivePanel] = useState<PanelId | null>(null);
+  const scrollLockRef = useRef(false);
   const [showScrollHint, setShowScrollHint] = useState(false);
   const scrollHintDismissed = useRef(false);
 
@@ -1195,12 +1264,18 @@ export default function Home() {
 
   const scrollToPanel = (panelId: PanelId) => {
     setActivePanel(panelId);
+    // Lock scroll sync so it doesn't override during smooth scroll
+    scrollLockRef.current = true;
+    setTimeout(() => { scrollLockRef.current = false; }, 800);
     const el = document.querySelector(panelSelectorMap[panelId]) as HTMLElement;
     if (!el) return;
     if (isMobile) {
       window.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
     } else {
-      document.documentElement.scrollTo({ left: el.offsetLeft, behavior: 'smooth' });
+      // Center the panel horizontally in the viewport
+      const panelCenter = el.offsetLeft + el.offsetWidth / 2;
+      const target = panelCenter - window.innerWidth / 2;
+      document.documentElement.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
     }
   };
 
@@ -1221,7 +1296,7 @@ export default function Home() {
 
       // Arrow keys: step through panels
       if (!e.shiftKey) {
-        const idx = PANELS.indexOf(activePanel);
+        const idx = activePanel ? PANELS.indexOf(activePanel) : -1;
         if (e.key === 'ArrowRight' && idx < PANELS.length - 1) {
           e.preventDefault();
           scrollToPanel(PANELS[idx + 1]);
@@ -1242,11 +1317,31 @@ export default function Home() {
     const selectors: [PanelId, string][] = [
       ['home', '.home-panel'],
       ['info', '.info-panel'],
-      ['work', '.work-panel'],
-      ['writing', '.writing-panel'],
     ];
     const onScroll = () => {
+      if (scrollLockRef.current) return;
       const scrollPos = isMobile ? window.scrollY : document.documentElement.scrollLeft;
+      // Check if we're still in the welcome zone
+      const firstPanel = document.querySelector(selectors[0][1]) as HTMLElement;
+      if (firstPanel) {
+        const firstStart = isMobile ? firstPanel.offsetTop : firstPanel.offsetLeft;
+        if (scrollPos < firstStart * 0.4) {
+          setActivePanel(null);
+          return;
+        }
+      }
+      // Check if we're in the closing zone (past the last panel)
+      const lastPanel = document.querySelector(selectors[selectors.length - 1][1]) as HTMLElement;
+      if (lastPanel) {
+        const lastEnd = isMobile
+          ? lastPanel.offsetTop + lastPanel.offsetHeight
+          : lastPanel.offsetLeft + lastPanel.offsetWidth;
+        if (scrollPos > lastEnd - (isMobile ? window.innerHeight : window.innerWidth) * 0.6) {
+          setActivePanel(null);
+          return;
+        }
+      }
+
       let closest: PanelId = 'home';
       let minDist = Infinity;
       for (const [id, sel] of selectors) {
@@ -1337,7 +1432,7 @@ export default function Home() {
         if (e.shiftKey && !e.metaKey && !e.ctrlKey) {
           e.preventDefault();
           // Cycle through panels
-          const currentIdx = PANELS.indexOf(activePanelRef.current);
+          const currentIdx = PANELS.indexOf(activePanelRef.current as PanelId);
           const next = PANELS[(currentIdx + 1) % PANELS.length];
           scrollToPanel(next);
           playTick();
@@ -1420,11 +1515,6 @@ export default function Home() {
     { name: "ESP32 Weather Display", role: "Hardware + Software", year: "2024", img: "/Esp32-weatherdisplay/B83BE970-9380-4464-A007-CD0E7A8B7CD2_1_105_c.jpeg" },
   ];
 
-  const writingEntries = [
-    { title: "On calm technology", date: "2026", excerpt: "Why the best interfaces disappear", href: "/writing" },
-    { title: "Building in public", date: "2025", excerpt: "Lessons from shipping side projects", href: "/writing" },
-    { title: "Design as reduction", date: "2025", excerpt: "Removing until only the essential remains", href: "/writing" },
-  ];
 
 
   return (
@@ -1432,7 +1522,7 @@ export default function Home() {
       className="horizontal-scroll-container"
       ref={containerRef}
     >
-      <StatusBar currentSection={activePanel} />
+      <StatusBar currentSection={activePanel ?? 'home'} />
       <TabBar
         activePanel={activePanel}
         onSelect={(panel) => { scrollToPanel(panel); playTick(); }}
@@ -1454,7 +1544,7 @@ export default function Home() {
       <div className="noise-overlay" />
 
       {/* Welcome — entrance */}
-      <div className="welcome-panel">
+      <div className="welcome-panel" onClick={() => scrollToPanel('home')}>
         <span className="welcome-name">Roy Jad</span>
       </div>
 
@@ -1800,8 +1890,8 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Work — project cards */}
-      <div ref={workPanelRef} className={`work-panel${revealed ? ' revealed' : ''}`}>
+      {/* Work — project cards (hidden) */}
+      {/* <div ref={workPanelRef} className={`work-panel${revealed ? ' revealed' : ''}`}>
         <div className="work-container" ref={workContainerRef} onClick={() => { if (activePanel !== 'work') { scrollToPanel('work'); } }}>
           <section className="info-section">
             <h2 className="section-label">Projects</h2>
@@ -1823,26 +1913,24 @@ export default function Home() {
             </div>
           </section>
         </div>
-      </div>
+      </div> */}
 
-      {/* Writing — article list */}
-      <div ref={writingPanelRef} className={`writing-panel${revealed ? ' revealed' : ''}`}>
+      {/* Writing — coming soon (hidden) */}
+      {/* <div ref={writingPanelRef} className={`writing-panel${revealed ? ' revealed' : ''}`}>
         <div className="writing-container" ref={writingContainerRef} onClick={() => { if (activePanel !== 'writing') { scrollToPanel('writing'); } }}>
           <section className="info-section">
             <h2 className="section-label">Writing</h2>
-            <div className="writing-panel-entries">
-              {writingEntries.map((entry, i) => (
-                <a key={i} href={entry.href} className="writing-panel-entry">
-                  <span className="writing-panel-title">{entry.title}</span>
-                  <span className="writing-panel-excerpt">{entry.excerpt}</span>
-                  <span className="years-inline">{entry.date}</span>
-                </a>
-              ))}
-            </div>
+            <p className="coming-soon">Coming soon</p>
           </section>
-          <div className="writing-panel-footer">
-            <a href="/writing">All writing<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a>
-          </div>
+        </div>
+      </div> */}
+
+      {/* Closing — bookend */}
+      <div className="closing-panel" ref={closingPanelRef} onClick={() => scrollToPanel('info')}>
+        <div className="closing-socials" onClick={(e) => e.stopPropagation()}>
+          <a href="mailto:jadroy77@gmail.com">Email</a>
+          <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer">Twitter</a>
+          <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
         </div>
       </div>
 
