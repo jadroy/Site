@@ -600,7 +600,7 @@ main.info-panel.revealed {
 
   .home-container {
     padding: 36px 24px 32px;
-    border-radius: 16px 16px 0 0;
+    border-radius: 16px;
   }
 
   .home-memory-sharp {
@@ -1346,30 +1346,6 @@ a.work-card:hover .external-arrow {
 }
 
 /* Social links — top right of doc */
-.page-links {
-  position: absolute;
-  top: 40px;
-  right: 48px;
-  display: flex;
-  flex-direction: column;
-  z-index: 2;
-}
-
-.page-links a {
-  text-decoration: none;
-  color: inherit;
-  transition: opacity 0.15s ease;
-  line-height: 1.5;
-}
-
-.page-links a:hover {
-  opacity: 0.6;
-}
-
-.page-links a:hover .external-arrow {
-  opacity: 0.8;
-  transform: translate(1px, -1px);
-}
 
 .info-section-cases {
   grid-column: 1 / -1;
@@ -3359,6 +3335,12 @@ a.company:hover {
     height: 100svh;
   }
 
+  .closing-panel {
+    width: 100%;
+    min-width: auto;
+    height: 100svh;
+  }
+
   main.info-panel {
     width: 100%;
     min-width: auto;
@@ -3373,7 +3355,7 @@ a.company:hover {
 
   .info-container {
     padding: 36px 24px 48px;
-    border-radius: 16px 16px 0 0;
+    border-radius: 16px;
     overflow: visible;
   }
 
@@ -3594,14 +3576,6 @@ a.company:hover {
     flex: none;
   }
 
-  .page-links {
-    position: static;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 16px;
-    margin-top: 40px;
-    padding-bottom: 24px;
-  }
 
   /* Spatial effects: disable hover lift on touch */
   .spatial-panel:hover {
@@ -3622,50 +3596,6 @@ a.company:hover {
     bottom: 68px;
   }
 
-  /* Mobile theme picker — row of dots at bottom of info panel */
-  .mobile-theme-picker {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border, rgba(0, 0, 0, 0.06));
-    margin-top: 8px;
-  }
-
-  .mobile-theme-picker-label {
-    font-size: 10px;
-    color: var(--text-faint, #bbb);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    flex-shrink: 0;
-  }
-
-  .mobile-theme-dots {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .mobile-theme-dot {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: 1.5px solid var(--border, rgba(0, 0, 0, 0.1));
-    cursor: pointer;
-    transition: border-color 0.15s ease, transform 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-    padding: 0;
-    background: none;
-  }
-
-  .mobile-theme-dot:active {
-    transform: scale(0.9);
-  }
-
-  .mobile-theme-dot.active {
-    border-color: var(--text-muted, #777);
-    box-shadow: 0 0 0 1.5px var(--text-muted, #777);
-  }
 
 }
 
