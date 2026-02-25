@@ -5,6 +5,7 @@ import { GeistPixelLine } from "geist/font/pixel";
 import { IBM_Plex_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./design-system.css";
 import "./globals.css";
 
@@ -45,6 +46,7 @@ export default function RootLayout({
       <body suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable} ${ibmPlexMono.variable} ${saans.variable} ${GeistPixelLine.variable} ${departureMono.variable}`}>
         {children}
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
