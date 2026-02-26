@@ -1505,7 +1505,7 @@ export default function Home() {
   const statementLines: (string | ReactNode)[] = [
     "Creative technologist building tools, interfaces, and objects",
     "Drawn to things that feel considered and stay out of the way",
-    <>Currently exploring <a href="https://en.wikipedia.org/wiki/Calm_technology" target="_blank" rel="noopener noreferrer">calm technology<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a></>,
+    <>Currently exploring <span className="link-preview-wrap"><a href="https://en.wikipedia.org/wiki/Calm_technology" target="_blank" rel="noopener noreferrer">calm technology<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a><span className="link-preview" aria-hidden="true"><span className="link-preview-title">Calm technology</span><span className="link-preview-desc">Technology designed to inform without demanding attention. Coined by Mark Weiser &amp; John Seely Brown at Xerox PARC, 1995.</span><span className="link-preview-url">en.wikipedia.org</span></span></span></>,
   ];
 
   const workProjects = [
@@ -1552,6 +1552,7 @@ export default function Home() {
       <div ref={homePanelRef} className={`home-panel${showTV ? ' home-tv' : ''}${revealed ? ' revealed' : ''}`}>
         {showTV && <div className="home-scanbar" />}
         {showMemory && <MemorySlideshow fx={memoryFx} />}
+        <div className="panel-title">Home</div>
         <div className="home-container" ref={homeContainerRef} onClick={() => { if (activePanel !== 'home') { scrollToPanel('home'); } }}>
           {!isMobile && showDotField && <DotField />}
           <div className="home-text">
@@ -1789,13 +1790,14 @@ export default function Home() {
           '--tree-branch-size': `${treeBranchSize}px`,
         } as React.CSSProperties}
       >
+        <div className="panel-title">Info</div>
         <div
           className="info-container"
           ref={infoContainerRef}
           onClick={() => { if (activePanel !== 'info') { scrollToPanel('info'); } }}
         >
         <div className="info-grid">
-          {/* Statement — spans full width */}
+          {/* Statement */}
           <section className="info-section info-section-statement intro-fade">
             <h2 className="section-label">About</h2>
             <div className={`statement-text statement-weight-${statementWeight}`}>
@@ -1828,9 +1830,15 @@ export default function Home() {
             <div className="conviction-item">Spatial computing is the future of interfaces</div>
           </section>
 
-          {/* Case Studies */}
-          <section className="info-section info-section-cases intro-fade">
-            <h2 className="section-label">Case Studies</h2>
+        </div>
+        </div>
+      </main>
+
+      {/* Work panel — Case Studies */}
+      <div ref={workPanelRef} className={`work-panel${revealed ? ' revealed' : ''}`}>
+        <div className="panel-title">Case Studies</div>
+        <div className="work-container" ref={workContainerRef}>
+          <section className="info-section info-section-cases">
             <div className="case-cards">
               {[
                 { href: "https://humanoids-index.com", img: "/Humanoid Index/CleanShot 2026-02-06 at 14.40.42@2x.png", alt: "Humanoid Index", title: "Humanoid Index", sub: "A catalog of humanoid robots" },
@@ -1863,36 +1871,8 @@ export default function Home() {
               })}
             </div>
           </section>
-
-
         </div>
-        </div>
-      </main>
-
-      {/* Work — project cards (hidden) */}
-      {/* <div ref={workPanelRef} className={`work-panel${revealed ? ' revealed' : ''}`}>
-        <div className="work-container" ref={workContainerRef} onClick={() => { if (activePanel !== 'work') { scrollToPanel('work'); } }}>
-          <section className="info-section">
-            <h2 className="section-label">Projects</h2>
-            <div className="work-panel-cards">
-              {workProjects.map((proj, i) => {
-                const Tag = proj.href ? 'a' : 'div';
-                const linkProps = proj.href ? { href: proj.href, target: "_blank" as const, rel: "noopener noreferrer" } : {};
-                return (
-                  <Tag key={i} className="work-panel-card" {...linkProps}>
-                    {proj.img && <img className="work-panel-card-img" src={proj.img} alt={proj.name} />}
-                    <div className="work-panel-card-text">
-                      <span className="company">{proj.name}{proj.href && <svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg>}</span>
-                      <span className="years-inline">{proj.role}</span>
-                      <span className="years-inline">{proj.year}</span>
-                    </div>
-                  </Tag>
-                );
-              })}
-            </div>
-          </section>
-        </div>
-      </div> */}
+      </div>
 
       {/* Writing — coming soon (hidden) */}
       {/* <div ref={writingPanelRef} className={`writing-panel${revealed ? ' revealed' : ''}`}>
