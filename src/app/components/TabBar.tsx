@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 export type PanelId = "home" | "work" | "info" | "writing";
 
-export const PANELS: PanelId[] = ["home", "info"];
+export const PANELS: PanelId[] = ["home", "info", "work"];
 
 const LABELS: Record<PanelId, string> = {
   home: "Home",
@@ -17,9 +17,19 @@ interface TabBarProps {
   activePanel: PanelId | null;
   onSelect: (panel: PanelId) => void;
   isMobile: boolean;
+  workSubCount?: number;
+  activeWorkSub?: number | null;
+  onSelectWorkSub?: (index: number) => void;
 }
 
-export default function TabBar({ activePanel, onSelect, isMobile }: TabBarProps) {
+export default function TabBar({
+  activePanel,
+  onSelect,
+  isMobile,
+  workSubCount = 0,
+  activeWorkSub = null,
+  onSelectWorkSub,
+}: TabBarProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Map<PanelId, HTMLButtonElement>>(new Map());
 
@@ -44,6 +54,24 @@ export default function TabBar({ activePanel, onSelect, isMobile }: TabBarProps)
             onClick={() => onSelect(id)}
           >
             <span className="tab-bar__label">{LABELS[id]}</span>
+            {id === "work" && workSubCount > 0 && (
+              <span
+                className={`tab-bar__subs${activePanel === "work" ? " tab-bar__subs--open" : ""}`}
+              >
+                {Array.from({ length: workSubCount }, (_, i) => (
+                  <span
+                    key={i}
+                    className={`tab-bar__sub${activeWorkSub === i ? " tab-bar__sub--active" : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectWorkSub?.(i);
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                ))}
+              </span>
+            )}
             {!isMobile && (
               <span className="tab-bar__hint">{PANELS.indexOf(id) + 1}</span>
             )}
@@ -97,7 +125,16 @@ function useIndicatorStyle(
     };
     update();
     window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+
+    // Observe active tab size changes (subsection dots expanding/collapsing)
+    const observer = new ResizeObserver(update);
+    const tab = activePanel ? tabRefs.current.get(activePanel) : null;
+    if (tab) observer.observe(tab);
+
+    return () => {
+      window.removeEventListener("resize", update);
+      observer.disconnect();
+    };
   }, [activePanel, tabRefs, trackRef]);
 
   return style;

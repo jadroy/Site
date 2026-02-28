@@ -1,441 +1,28 @@
 "use client";
 
-import { useState, useRef, useEffect, useLayoutEffect, ReactNode } from "react";
+import { useState, useRef, useEffect, ReactNode } from "react";
 import StatusBar from "./components/StatusBar";
-
 import TabBar, { type PanelId, PANELS } from "./components/TabBar";
-import DotField from "./components/DotField";
-
-type CharData = { char: string; opacity: number };
-type ThemeVars = Record<string, string>;
-
-/** Compute sunrise/sunset in local decimal hours for a given lat/lng and today's date. */
-function getSunTimes(lat: number, lng: number): { sunrise: number; sunset: number } {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 1);
-  const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000) + 1;
-
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const toDeg = (r: number) => (r * 180) / Math.PI;
-
-  const declination = -23.45 * Math.cos(toRad((360 / 365) * (dayOfYear + 10)));
-  const decRad = toRad(declination);
-  const latRad = toRad(lat);
-
-  const cosHA =
-    (Math.sin(toRad(-0.83)) - Math.sin(latRad) * Math.sin(decRad)) /
-    (Math.cos(latRad) * Math.cos(decRad));
-
-  // Polar edge cases
-  if (cosHA > 1) return { sunrise: 7, sunset: 17 };
-  if (cosHA < -1) return { sunrise: 3, sunset: 23 };
-
-  const ha = toDeg(Math.acos(cosHA));
-
-  // Equation of time correction
-  const B = toRad((360 / 365) * (dayOfYear - 81));
-  const EoT = 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
-
-  const solarNoon = 12 - lng / 15 - EoT / 60; // UTC hours
-  const tzOffset = now.getTimezoneOffset() / -60;
-
-  return {
-    sunrise: solarNoon - ha / 15 + tzOffset,
-    sunset: solarNoon + ha / 15 + tzOffset,
-  };
-}
-
-/** Returns true if current local time is past sunset or before sunrise. */
-function isPastSundown(lat: number, lng: number): boolean {
-  const { sunrise, sunset } = getSunTimes(lat, lng);
-  const now = new Date();
-  const currentHour = now.getHours() + now.getMinutes() / 60;
-  return currentHour >= sunset || currentHour < sunrise;
-}
-
-const themeDefinitions: { name: string; vars: ThemeVars }[] = [
-  { name: 'Default', vars: {} },
-  {
-    name: 'Cryo',
-    vars: {
-      '--bg': '#f5f8fc',
-      '--text': 'hsl(210, 15%, 50%)',
-      '--text-muted': 'hsl(210, 12%, 58%)',
-      '--text-subtle': 'hsl(210, 10%, 63%)',
-      '--text-faint': 'hsl(210, 8%, 72%)',
-      '--border': 'hsl(210, 15%, 90%)',
-      '--grid-line': 'hsl(210, 12%, 95%)',
-      '--card-bg': 'hsl(210, 15%, 97%)',
-      '--cursor': 'hsl(200, 65%, 58%)',
-      '--accent': 'hsl(200, 65%, 58%)',
-      '--accent-warm': 'hsl(210, 60%, 52%)',
-      '--accent-gradient': 'linear-gradient(135deg, hsl(200, 65%, 62%) 0%, hsl(210, 60%, 55%) 50%, hsl(195, 65%, 58%) 100%)',
-    },
-  },
-  {
-    name: 'Oxide',
-    vars: {
-      '--bg': '#fdf8f2',
-      '--text': 'hsl(25, 15%, 48%)',
-      '--text-muted': 'hsl(25, 12%, 56%)',
-      '--text-subtle': 'hsl(25, 10%, 62%)',
-      '--text-faint': 'hsl(25, 8%, 70%)',
-      '--border': 'hsl(25, 15%, 88%)',
-      '--grid-line': 'hsl(25, 12%, 94%)',
-      '--card-bg': 'hsl(25, 15%, 96%)',
-      '--cursor': 'hsl(22, 75%, 52%)',
-      '--accent': 'hsl(22, 75%, 52%)',
-      '--accent-warm': 'hsl(15, 70%, 46%)',
-      '--accent-gradient': 'linear-gradient(135deg, hsl(25, 75%, 55%) 0%, hsl(15, 70%, 48%) 50%, hsl(30, 75%, 52%) 100%)',
-    },
-  },
-  {
-    name: 'Phantom',
-    vars: {
-      '--bg': '#f8f6fc',
-      '--text': 'hsl(260, 10%, 50%)',
-      '--text-muted': 'hsl(260, 8%, 58%)',
-      '--text-subtle': 'hsl(260, 6%, 63%)',
-      '--text-faint': 'hsl(260, 4%, 72%)',
-      '--border': 'hsl(260, 12%, 90%)',
-      '--grid-line': 'hsl(260, 8%, 95%)',
-      '--card-bg': 'hsl(260, 12%, 97%)',
-      '--cursor': 'hsl(265, 45%, 62%)',
-      '--accent': 'hsl(265, 45%, 62%)',
-      '--accent-warm': 'hsl(275, 40%, 56%)',
-      '--accent-gradient': 'linear-gradient(135deg, hsl(265, 45%, 65%) 0%, hsl(275, 40%, 58%) 50%, hsl(255, 45%, 62%) 100%)',
-    },
-  },
-  {
-    name: 'Signal',
-    vars: {
-      '--bg': '#f4f9f5',
-      '--text': 'hsl(150, 12%, 46%)',
-      '--text-muted': 'hsl(150, 10%, 54%)',
-      '--text-subtle': 'hsl(150, 8%, 60%)',
-      '--text-faint': 'hsl(150, 5%, 68%)',
-      '--border': 'hsl(150, 10%, 88%)',
-      '--grid-line': 'hsl(150, 8%, 94%)',
-      '--card-bg': 'hsl(150, 10%, 96%)',
-      '--cursor': 'hsl(155, 55%, 45%)',
-      '--accent': 'hsl(155, 55%, 45%)',
-      '--accent-warm': 'hsl(160, 50%, 40%)',
-      '--accent-gradient': 'linear-gradient(135deg, hsl(155, 55%, 48%) 0%, hsl(160, 50%, 42%) 50%, hsl(150, 55%, 45%) 100%)',
-    },
-  },
-  {
-    name: 'Ember',
-    vars: {
-      '--bg': '#1a1614',
-      '--text': 'hsl(30, 15%, 68%)',
-      '--text-muted': 'hsl(30, 12%, 58%)',
-      '--text-subtle': 'hsl(30, 10%, 50%)',
-      '--text-faint': 'hsl(30, 8%, 42%)',
-      '--border': 'hsl(30, 10%, 24%)',
-      '--grid-line': 'hsl(30, 8%, 16%)',
-      '--card-bg': 'hsl(30, 10%, 13%)',
-      '--cursor': 'hsl(35, 80%, 50%)',
-      '--accent': 'hsl(35, 80%, 50%)',
-      '--accent-warm': 'hsl(25, 75%, 45%)',
-      '--accent-gradient': 'linear-gradient(135deg, hsl(35, 80%, 52%) 0%, hsl(25, 75%, 47%) 50%, hsl(40, 80%, 50%) 100%)',
-    },
-  },
-  {
-    name: 'Slate',
-    vars: {
-      '--bg': '#151a1e',
-      '--text': 'hsl(210, 15%, 68%)',
-      '--text-muted': 'hsl(210, 12%, 58%)',
-      '--text-subtle': 'hsl(210, 10%, 50%)',
-      '--text-faint': 'hsl(210, 8%, 42%)',
-      '--border': 'hsl(210, 10%, 24%)',
-      '--grid-line': 'hsl(210, 8%, 16%)',
-      '--card-bg': 'hsl(210, 10%, 13%)',
-      '--cursor': 'hsl(200, 60%, 52%)',
-      '--accent': 'hsl(200, 60%, 52%)',
-      '--accent-warm': 'hsl(210, 55%, 48%)',
-      '--accent-gradient': 'linear-gradient(135deg, hsl(200, 60%, 55%) 0%, hsl(210, 55%, 50%) 50%, hsl(195, 60%, 52%) 100%)',
-    },
-  },
-  {
-    name: 'Void',
-    vars: {
-      '--bg': '#171717',
-      '--text': 'hsl(0, 0%, 68%)',
-      '--text-muted': 'hsl(0, 0%, 58%)',
-      '--text-subtle': 'hsl(0, 0%, 50%)',
-      '--text-faint': 'hsl(0, 0%, 42%)',
-      '--border': 'hsl(0, 0%, 24%)',
-      '--grid-line': 'hsl(0, 0%, 16%)',
-      '--card-bg': 'hsl(0, 0%, 13%)',
-      '--cursor': 'hsl(0, 0%, 65%)',
-      '--accent': 'hsl(0, 0%, 65%)',
-      '--accent-warm': 'hsl(0, 0%, 58%)',
-      '--accent-gradient': 'linear-gradient(135deg, hsl(0, 0%, 68%) 0%, hsl(0, 0%, 58%) 50%, hsl(0, 0%, 65%) 100%)',
-    },
-  },
-  {
-    name: 'Soot',
-    vars: {
-      '--bg': '#0e0e0e',
-      '--text': 'hsl(0, 0%, 52%)',
-      '--text-muted': 'hsl(0, 0%, 45%)',
-      '--text-subtle': 'hsl(0, 0%, 38%)',
-      '--text-faint': 'hsl(0, 0%, 30%)',
-      '--border': 'hsl(0, 0%, 18%)',
-      '--grid-line': 'hsl(0, 0%, 11%)',
-      '--card-bg': 'hsl(0, 0%, 8%)',
-      '--cursor': 'hsl(0, 0%, 42%)',
-      '--accent': 'hsl(0, 0%, 42%)',
-      '--accent-warm': 'hsl(0, 0%, 36%)',
-      '--accent-gradient': 'linear-gradient(135deg, hsl(0, 0%, 44%) 0%, hsl(0, 0%, 36%) 50%, hsl(0, 0%, 42%) 100%)',
-    },
-  },
-];
-
-/* ── Mini window-bar components ── */
-function WindowBar({ title, children }: { title: string; children?: ReactNode }) {
-  return (
-    <div className="window-bar">
-      <span className="window-bar-title">{title}</span>
-      {children && <div className="window-bar-controls">{children}</div>}
-    </div>
-  );
-}
-
-function BarButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button className="bar-btn" onClick={onClick}>
-      {label}
-    </button>
-  );
-}
-
-function BarToggle<T extends string>({
-  options,
-  value,
-  onChange,
-}: {
-  options: { label: string; value: T }[];
-  value: T;
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div className="bar-toggle">
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          className={`bar-toggle-btn ${value === opt.value ? "active" : ""}`}
-          onClick={() => onChange(opt.value)}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-const memoryImages = [
-  "/photos/me/DABF7F66-A96C-4DD8-A99E-844411C4FA0D_1_105_c.jpeg",
-  "/photos/image_2.jpg",
-  "/Context/Landing Hero.png",
-  "/photos/me/4CD50948-9950-4963-90A7-B8E053E7EF43_1_105_c.jpeg",
-  "/Humanoid Index/CleanShot 2026-02-06 at 14.40.42@2x.png",
-  "/photos/image_1.jpg",
-  "/Share/Share Work - Cover (1).png",
-];
-
-type MemoryFx = {
-  grayscale: number;
-  contrast: number;
-  brightness: number;
-  blur: number;
-  dither: number;
-  grain: number;
-  halftone: number;
-  pixelate: number;
-  maskSoftness: number;
-};
-
-const defaultFx: MemoryFx = {
-  grayscale: 0,
-  contrast: 1,
-  brightness: 1,
-  blur: 0,
-  dither: 0,
-  grain: 0,
-  halftone: 0,
-  pixelate: 0,
-  maskSoftness: 70,
-};
-
-const memoryPresets: { name: string; fx: Partial<MemoryFx> }[] = [
-  { name: "Clean", fx: {} },
-  { name: "Dither", fx: { dither: 0.8, grayscale: 80, contrast: 1.6 } },
-  { name: "Newsprint", fx: { halftone: 1, grayscale: 100, contrast: 1.3 } },
-  { name: "Grain", fx: { grain: 0.6, contrast: 1.1, brightness: 1.05 } },
-  { name: "Faded", fx: { grayscale: 60, contrast: 0.85, brightness: 1.15, blur: 1 } },
-  { name: "Pixel", fx: { pixelate: 8, contrast: 1.2 } },
-  { name: "Stark", fx: { grayscale: 100, contrast: 2.2, brightness: 1.1, dither: 0.5 } },
-];
-
-function MemorySlideshow({ fx }: { fx: MemoryFx }) {
-  const [active, setActive] = useState(0);
-  const [fade, setFade] = useState(true);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setFade(false);
-      setTimeout(() => {
-        setActive((prev) => (prev + 1) % memoryImages.length);
-        setFade(true);
-      }, 1200);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const cssFilter = [
-    fx.grayscale > 0 ? `grayscale(${fx.grayscale}%)` : '',
-    fx.contrast !== 1 ? `contrast(${fx.contrast})` : '',
-    fx.brightness !== 1 ? `brightness(${fx.brightness})` : '',
-    fx.blur > 0 ? `blur(${fx.blur}px)` : '',
-  ].filter(Boolean).join(' ') || 'none';
-
-  const svgFilter = [
-    fx.dither > 0 ? 'url(#memory-dither)' : '',
-    fx.halftone > 0 ? 'url(#memory-halftone)' : '',
-  ].filter(Boolean).join(' ');
-
-  const combinedFilter = [cssFilter !== 'none' ? cssFilter : '', svgFilter].filter(Boolean).join(' ') || 'none';
-
-  const maskGrad = `radial-gradient(ellipse 65% 65% at center, black 15%, transparent ${fx.maskSoftness}%)`;
-
-  return (
-    <div className="home-memory" aria-hidden="true">
-      {/* SVG filter definitions */}
-      <svg width="0" height="0" style={{ position: 'absolute' }}>
-        <defs>
-          <filter id="memory-dither" colorInterpolationFilters="sRGB">
-            <feTurbulence type="fractalNoise" baseFrequency="1.5" numOctaves="1" seed="2" result="noise" />
-            <feComponentTransfer in="noise" result="threshNoise">
-              <feFuncR type="discrete" tableValues={`${0.5 - fx.dither * 0.4} ${0.5 + fx.dither * 0.4}`} />
-              <feFuncG type="discrete" tableValues={`${0.5 - fx.dither * 0.4} ${0.5 + fx.dither * 0.4}`} />
-              <feFuncB type="discrete" tableValues={`${0.5 - fx.dither * 0.4} ${0.5 + fx.dither * 0.4}`} />
-            </feComponentTransfer>
-            <feBlend in="SourceGraphic" in2="threshNoise" mode="multiply" />
-          </filter>
-          <filter id="memory-halftone" colorInterpolationFilters="sRGB">
-            <feTurbulence type="turbulence" baseFrequency={0.05 + fx.halftone * 0.05} numOctaves="1" seed="0" result="dots" />
-            <feComponentTransfer in="dots" result="pattern">
-              <feFuncR type="discrete" tableValues="0 1" />
-              <feFuncG type="discrete" tableValues="0 1" />
-              <feFuncB type="discrete" tableValues="0 1" />
-            </feComponentTransfer>
-            <feBlend in="SourceGraphic" in2="pattern" mode="multiply" />
-          </filter>
-        </defs>
-      </svg>
-
-      <div className="home-memory-glow">
-        <img
-          src={memoryImages[active]}
-          alt=""
-          className={fade ? "memory-visible" : "memory-hidden"}
-        />
-      </div>
-      <div
-        className="home-memory-sharp"
-        style={{
-          filter: combinedFilter,
-          imageRendering: fx.pixelate > 0 ? 'pixelated' : undefined,
-        } as React.CSSProperties}
-      >
-        <img
-          src={memoryImages[active]}
-          alt=""
-          className={fade ? "memory-visible" : "memory-hidden"}
-          style={{
-            maskImage: maskGrad,
-            WebkitMaskImage: maskGrad,
-            ...(fx.pixelate > 0 ? {
-              imageRendering: 'pixelated' as const,
-              width: `${100 / (1 + fx.pixelate * 0.5)}%`,
-              height: `${100 / (1 + fx.pixelate * 0.5)}%`,
-              transform: `scale(${1 + fx.pixelate * 0.5})`,
-            } : {}),
-          }}
-        />
-      </div>
-      {/* Grain overlay */}
-      {fx.grain > 0 && (
-        <div className="home-memory-grain" style={{ opacity: fx.grain }} />
-      )}
-    </div>
-  );
-}
-
-let audioCtx: AudioContext | null = null;
-function playTick() {
-  if (!audioCtx) audioCtx = new AudioContext();
-  const t = audioCtx.currentTime;
-
-  // Cloth flip — soft fabric unfurl
-  const dur = 0.26;
-  const bufferLen = Math.floor(audioCtx.sampleRate * dur);
-  const buffer = audioCtx.createBuffer(1, bufferLen, audioCtx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferLen; i++) data[i] = Math.random() * 2 - 1;
-
-  // Layer 1: muffled "fwup" — the initial flip
-  const n1 = audioCtx.createBufferSource();
-  n1.buffer = buffer;
-  const lp1 = audioCtx.createBiquadFilter();
-  lp1.type = 'lowpass';
-  lp1.frequency.setValueAtTime(2400, t);
-  lp1.frequency.exponentialRampToValueAtTime(500, t + 0.08);
-  lp1.Q.value = 0.6;
-  const g1 = audioCtx.createGain();
-  g1.gain.setValueAtTime(0.002, t);
-  g1.gain.linearRampToValueAtTime(0.004, t + 0.015);
-  g1.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
-  n1.connect(lp1); lp1.connect(g1); g1.connect(audioCtx.destination);
-  n1.start(t); n1.stop(t + 0.12);
-
-  // Layer 2: fabric rustle — mid-band texture
-  const n2 = audioCtx.createBufferSource();
-  n2.buffer = buffer;
-  const bp = audioCtx.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.setValueAtTime(1800, t + 0.01);
-  bp.frequency.exponentialRampToValueAtTime(700, t + 0.18);
-  bp.Q.value = 0.5;
-  const g2 = audioCtx.createGain();
-  g2.gain.setValueAtTime(0.001, t);
-  g2.gain.linearRampToValueAtTime(0.0025, t + 0.04);
-  g2.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
-  n2.connect(bp); bp.connect(g2); g2.connect(audioCtx.destination);
-  n2.start(t); n2.stop(t + 0.24);
-
-  // Layer 3: soft air displacement — cloth pushing air
-  const n3 = audioCtx.createBufferSource();
-  n3.buffer = buffer;
-  const lp2 = audioCtx.createBiquadFilter();
-  lp2.type = 'lowpass';
-  lp2.frequency.setValueAtTime(800, t + 0.02);
-  lp2.frequency.exponentialRampToValueAtTime(200, t + 0.2);
-  lp2.Q.value = 0.2;
-  const g3 = audioCtx.createGain();
-  g3.gain.setValueAtTime(0.001, t);
-  g3.gain.linearRampToValueAtTime(0.0025, t + 0.05);
-  g3.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
-  n3.connect(lp2); lp2.connect(g3); g3.connect(audioCtx.destination);
-  n3.start(t); n3.stop(t + dur);
-}
+import SandDunes from "./components/SandDunes";
+import BootSequence from "./components/BootSequence";
+import MemorySlideshow from "./components/MemorySlideshow";
+import { themeDefinitions, bgOptions, defaultFx, memoryPresets, type MemoryFx } from "./constants";
+import { playTick, playWhoosh } from "./utils/audio";
+import { useScrollPhysics } from "./hooks/useScrollPhysics";
+import { useTheme } from "./hooks/useTheme";
+import { useNameScramble } from "./hooks/useNameScramble";
+import { usePanelReveal } from "./hooks/usePanelReveal";
+import { usePanelTilt } from "./hooks/usePanelTilt";
+import { usePanelNavigation } from "./hooks/usePanelNavigation";
+import { useCrosshair } from "./hooks/useCrosshair";
+import { useKeyTracker } from "./hooks/useKeyTracker";
 
 export default function Home() {
+  /* ── Boot gate ── */
+  const [booted, setBooted] = useState(false);
 
+  /* ── Clock ── */
   const [currentTime, setCurrentTime] = useState('');
-
   useEffect(() => {
     const fmt = () => new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     setCurrentTime(fmt());
@@ -443,90 +30,7 @@ export default function Home() {
     return () => clearInterval(id);
   }, []);
 
-
-  const originalName = "Roy Jad";
-  const [chars, setChars] = useState<CharData[]>(
-    originalName.split("").map((c) => ({ char: c, opacity: 1 }))
-  );
-  const [isHovering, setIsHovering] = useState(false);
-  const [isScrambling, setIsScrambling] = useState(false);
-
-  const scrambleIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const cycleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const stopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const startScramble = (duration?: number) => {
-    if (scrambleIntervalRef.current) clearInterval(scrambleIntervalRef.current);
-    if (stopTimeoutRef.current) clearTimeout(stopTimeoutRef.current);
-
-    setIsScrambling(true);
-    scrambleIntervalRef.current = setInterval(() => {
-      setChars(
-        originalName.split("").map((c) => ({
-          char: c === " " ? " " : "#",
-          opacity: Math.random() * 0.7 + 0.3,
-        }))
-      );
-    }, 120);
-
-    if (duration) {
-      stopTimeoutRef.current = setTimeout(() => {
-        if (scrambleIntervalRef.current) {
-          clearInterval(scrambleIntervalRef.current);
-          scrambleIntervalRef.current = null;
-        }
-        setIsScrambling(false);
-        setChars(originalName.split("").map((c) => ({ char: c, opacity: 1 })));
-      }, duration);
-    }
-  };
-
-  const stopScramble = () => {
-    if (scrambleIntervalRef.current) {
-      clearInterval(scrambleIntervalRef.current);
-      scrambleIntervalRef.current = null;
-    }
-    if (stopTimeoutRef.current) {
-      clearTimeout(stopTimeoutRef.current);
-      stopTimeoutRef.current = null;
-    }
-    setIsScrambling(false);
-    setChars(originalName.split("").map((c) => ({ char: c, opacity: 1 })));
-  };
-
-  // Intermittent scramble effect
-  useEffect(() => {
-    const scheduleCycle = () => {
-      const delay = 3000 + Math.random() * 3000;
-      cycleTimeoutRef.current = setTimeout(() => {
-        if (!isHovering) {
-          startScramble(400 + Math.random() * 400);
-        }
-        scheduleCycle();
-      }, delay);
-    };
-
-    cycleTimeoutRef.current = setTimeout(() => {
-      if (!isHovering) {
-        startScramble(400 + Math.random() * 400);
-      }
-      scheduleCycle();
-    }, 2000);
-
-    return () => {
-      if (cycleTimeoutRef.current) clearTimeout(cycleTimeoutRef.current);
-    };
-  }, [isHovering]);
-
-  // Hover effect
-  useEffect(() => {
-    if (isHovering) {
-      startScramble();
-    } else {
-      stopScramble();
-    }
-  }, [isHovering]);
-
+  /* ── Mobile detection ── */
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const mql = window.matchMedia("(max-width: 767px)");
@@ -536,695 +40,39 @@ export default function Home() {
     return () => mql.removeEventListener("change", onChange as (e: MediaQueryListEvent) => void);
   }, []);
 
-  // Reveal state for entrance animation
-  const [revealed, setRevealed] = useState(false);
-  const homePanelRef = useRef<HTMLDivElement>(null);
-
-  // Reset scroll to left edge on mount
-  useEffect(() => {
-    if (!isMobile) {
-      document.documentElement.scrollLeft = 0;
-    }
-  }, []);
-
-  // Add .scroll-driven class on mount (desktop only) to disable CSS transitions
-  useEffect(() => {
-    if (isMobile) return;
-    const container = containerRef.current;
-    if (!container) return;
-    container.classList.add('scroll-driven');
-    return () => container.classList.remove('scroll-driven');
-  }, [isMobile]);
-
-  // Vertical scroll → horizontal scroll (desktop only)
-  useEffect(() => {
-    if (isMobile) return;
-    let wheelReleaseTimer: ReturnType<typeof setTimeout>;
-    const onWheel = (e: WheelEvent) => {
-      // Only convert vertical wheel to horizontal when it's predominantly vertical
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        const maxScroll = document.documentElement.scrollWidth - window.innerWidth;
-        if (maxScroll > 0) {
-          e.preventDefault();
-          const currentScroll = document.documentElement.scrollLeft;
-          // At right edge scrolling right — accumulate overscroll
-          if (currentScroll >= maxScroll - 1 && e.deltaY > 0) {
-            isInputActiveRef.current = true;
-            clearTimeout(wheelReleaseTimer);
-            wheelReleaseTimer = setTimeout(() => { isInputActiveRef.current = false; }, 120);
-            // Rubber-band resistance: diminishing returns the further you pull
-            const resistance = 1 / (1 + overscrollXRef.current / 300);
-            overscrollXRef.current = Math.max(0, overscrollXRef.current + e.deltaY * resistance * 0.5);
-          } else {
-            // Scrolling back — bleed off overscroll first
-            if (overscrollXRef.current > 0 && e.deltaY < 0) {
-              overscrollXRef.current = Math.max(0, overscrollXRef.current + e.deltaY * 0.5);
-              if (overscrollXRef.current <= 0) {
-                overscrollXRef.current = 0;
-                isInputActiveRef.current = false;
-              }
-            } else {
-              isInputActiveRef.current = false;
-              document.documentElement.scrollLeft += e.deltaY;
-            }
-          }
-        }
-      }
-    };
-    window.addEventListener('wheel', onWheel, { passive: false });
-    return () => {
-      window.removeEventListener('wheel', onWheel);
-      clearTimeout(wheelReleaseTimer);
-    };
-  }, [isMobile]);
-
-  // Drag-to-scroll with momentum (desktop only)
-  useEffect(() => {
-    if (isMobile) return;
-
-    let isPointerDown = false;
-    let isDragActive = false;
-    let startX = 0;
-    let startScrollLeft = 0;
-    let velocityX = 0;
-    let momentumRaf: number;
-    const velocityHistory: { dx: number; dt: number }[] = [];
-
-    const DRAG_THRESHOLD = 4;
-    const FRICTION = 0.95;
-    const MIN_VELOCITY = 0.5;
-    const MAX_HISTORY = 5;
-
-    const cancelMomentum = () => {
-      cancelAnimationFrame(momentumRaf);
-      velocityX = 0;
-    };
-
-    const onPointerDown = (e: MouseEvent) => {
-      if (e.button !== 0) return;
-      if (e.shiftKey) return;
-      const target = e.target as HTMLElement;
-      if (target.closest('a, button, input, select, textarea, label, .scroll-slider-handle, .scroll-slider-track, [role="button"], .control-panel, .panel-lever')) return;
-
-      cancelMomentum();
-      isPointerDown = true;
-      isDragActive = false;
-      startX = e.clientX;
-      startScrollLeft = document.documentElement.scrollLeft;
-      velocityHistory.length = 0;
-    };
-
-    let lastX = 0;
-    let lastTime = 0;
-
-    const onPointerMove = (e: MouseEvent) => {
-      if (!isPointerDown) return;
-
-      const dx = e.clientX - startX;
-
-      if (!isDragActive) {
-        if (Math.abs(dx) < DRAG_THRESHOLD) return;
-        isDragActive = true;
-        document.body.classList.add('drag-scrolling');
-        lastX = e.clientX;
-        lastTime = performance.now();
-      }
-
-      e.preventDefault();
-
-      const now = performance.now();
-      const dt = now - lastTime;
-      const moveDx = e.clientX - lastX;
-
-      if (dt > 0) {
-        velocityHistory.push({ dx: moveDx, dt });
-        if (velocityHistory.length > MAX_HISTORY) velocityHistory.shift();
-      }
-
-      lastX = e.clientX;
-      lastTime = now;
-
-      const intendedScroll = startScrollLeft - dx;
-      const maxScroll = document.documentElement.scrollWidth - window.innerWidth;
-      if (intendedScroll > maxScroll) {
-        document.documentElement.scrollLeft = maxScroll;
-        const overAmount = intendedScroll - maxScroll;
-        const resistance = 1 / (1 + overAmount / 400);
-        overscrollXRef.current = overAmount * resistance;
-        isInputActiveRef.current = true;
-      } else {
-        overscrollXRef.current = 0;
-        isInputActiveRef.current = false;
-        document.documentElement.scrollLeft = intendedScroll;
-      }
-    };
-
-    // Swallow click events that fire right after a drag
-    let didDrag = false;
-    const onClick = (e: MouseEvent) => {
-      if (didDrag) {
-        e.preventDefault();
-        e.stopPropagation();
-        didDrag = false;
-      }
-    };
-
-    const onPointerUp = () => {
-      if (!isPointerDown) return;
-      isPointerDown = false;
-      isInputActiveRef.current = false;
-
-      if (!isDragActive) return;
-      isDragActive = false;
-      didDrag = true;
-      document.body.classList.remove('drag-scrolling');
-
-      // Compute release velocity from recent history
-      let totalDx = 0;
-      let totalDt = 0;
-      for (const v of velocityHistory) {
-        totalDx += v.dx;
-        totalDt += v.dt;
-      }
-      velocityX = totalDt > 0 ? (totalDx / totalDt) * 16 : 0;
-
-      const applyMomentum = () => {
-        if (Math.abs(velocityX) < MIN_VELOCITY) {
-          isInputActiveRef.current = false;
-          return;
-        }
-
-        const before = document.documentElement.scrollLeft;
-        document.documentElement.scrollLeft -= velocityX;
-        const after = document.documentElement.scrollLeft;
-
-        // Hit right edge — feed remaining momentum into overscroll
-        if (before === after && velocityX < 0) {
-          const resistance = 1 / (1 + overscrollXRef.current / 300);
-          overscrollXRef.current = Math.max(0, overscrollXRef.current + Math.abs(velocityX) * resistance * 0.6);
-          isInputActiveRef.current = true;
-          velocityX *= 0.85; // decay faster when overscrolling
-          momentumRaf = requestAnimationFrame(applyMomentum);
-          return;
-        }
-
-        // Hit left edge — stop
-        if (before === after) {
-          velocityX = 0;
-          isInputActiveRef.current = false;
-          return;
-        }
-
-        velocityX *= FRICTION;
-        momentumRaf = requestAnimationFrame(applyMomentum);
-      };
-
-      momentumRaf = requestAnimationFrame(applyMomentum);
-    };
-
-    // Cancel momentum on new wheel input
-    const onWheel = () => cancelMomentum();
-
-    window.addEventListener('mousedown', onPointerDown);
-    window.addEventListener('mousemove', onPointerMove, { passive: false });
-    window.addEventListener('mouseup', onPointerUp);
-    window.addEventListener('click', onClick, true); // capture phase
-    window.addEventListener('wheel', onWheel, { passive: true });
-
-    return () => {
-      window.removeEventListener('mousedown', onPointerDown);
-      window.removeEventListener('mousemove', onPointerMove);
-      window.removeEventListener('mouseup', onPointerUp);
-      window.removeEventListener('click', onClick, true);
-      window.removeEventListener('wheel', onWheel);
-      cancelMomentum();
-    };
-  }, [isMobile]);
-
-  // Scroll-position-driven panel reveal + edge compression physics
-  useEffect(() => {
-    if (isMobile) return;
-
-    const homeEl = homePanelRef.current;
-    const infoEl = mainRef.current;
-    if (!homeEl || !infoEl) return;
-
-    const allPanelEls = [homeEl, infoEl];
-
-    let rafId: number;
-    let prevScroll = window.scrollX;
-    let velocity = 0;
-    // Per-panel spring state — only edge panels get compression
-    const springs = {
-      home: { value: 0, target: 0 },
-      info: { value: 0, target: 0 },
-    };
-    let revealedLocal = false;
-
-    const SPRING_STIFFNESS = 0.15;
-    const SPRING_DAMPING = 0.75;
-    const MAX_COMPRESSION = 0.04;
-    const EDGE_ZONE = 150;
-    const REVEAL_THRESHOLD = 70;
-    const REVEAL_PROGRESS_TRIGGER = 0.15;
-
-    const computeProgress = (el: HTMLElement): number => {
-      const rect = el.getBoundingClientRect();
-      const vw = window.innerWidth;
-      const raw = 1 - Math.max(0, rect.left) / vw;
-      return Math.max(0, Math.min(1, raw));
-    };
-
-    const tick = () => {
-      const currentScroll = window.scrollX;
-      velocity = currentScroll - prevScroll;
-      prevScroll = currentScroll;
-
-      const maxScroll = document.documentElement.scrollWidth - window.innerWidth;
-      const distToLeft = currentScroll;
-      const distToRight = maxScroll > 0 ? maxScroll - currentScroll : Infinity;
-
-      // Edge compression: home at left
-      if (distToLeft < EDGE_ZONE && velocity < 0 && maxScroll > 0) {
-        const proximity = 1 - distToLeft / EDGE_ZONE;
-        springs.home.target = proximity * Math.min(Math.abs(velocity) / 20, 1) * MAX_COMPRESSION;
-      } else {
-        springs.home.target = 0;
-      }
-
-      // Info: no compression
-      springs.info.target = 0;
-
-      // Spring overscroll back to 0 when no active input
-      if (!isInputActiveRef.current && overscrollXRef.current > 0) {
-        overscrollXRef.current *= 0.88;
-        if (overscrollXRef.current < 0.5) overscrollXRef.current = 0;
-      }
-
-      // Step springs
-      for (const s of Object.values(springs)) {
-        s.value += (s.target - s.value) * SPRING_STIFFNESS;
-        s.value *= SPRING_DAMPING;
-        if (Math.abs(s.value) < 0.0001) s.value = 0;
-      }
-
-      // Compute overscroll squeeze for writing panel
-      const overscrollSqueeze = overscrollXRef.current > 0
-        ? 1 - Math.min(overscrollXRef.current / 600, 0.35)
-        : 1;
-
-      // Apply transforms per panel
-      const panelSpringPairs: [HTMLElement, typeof springs.home][] = [
-        [homeEl, springs.home],
-        [infoEl, springs.info],
-      ];
-
-      for (const [panel, spring] of panelSpringPairs) {
-        const progress = computeProgress(panel);
-        const smoothed = progress * progress * (3 - 2 * progress); // smoothstep
-        const ty = REVEAL_THRESHOLD * (1 - smoothed);
-        const scaleY = 1 - spring.value;
-
-        panel.style.transformOrigin = '';
-        panel.style.transform = `translateY(${ty}px) scaleY(${scaleY})`;
-        panel.style.opacity = '1';
-
-        if (progress > REVEAL_PROGRESS_TRIGGER && !revealedLocal) {
-          revealedLocal = true;
-          setRevealed(true);
-        }
-      }
-
-      rafId = requestAnimationFrame(tick);
-    };
-
-    rafId = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(rafId);
-      for (const el of allPanelEls) {
-        el.style.transform = '';
-        el.style.opacity = '';
-      }
-    };
-  }, [isMobile]);
-
-  // Fallback: on mobile, use simple IntersectionObserver for reveal
-  useEffect(() => {
-    if (!isMobile) return;
-    const el = homePanelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setRevealed(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [isMobile]);
-
-  // Closing panel reveal on scroll into view
-  useEffect(() => {
-    const el = closingPanelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add('revealed');
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.15 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  // Window-bar state
-  const [statementWeight, setStatementWeight] = useState<'light' | 'regular' | 'medium'>('regular');
-  const [convictionsCollapsed, setConvictionsCollapsed] = useState(false);
-  const [showYears, setShowYears] = useState(true);
-  const [activeTheme, setActiveTheme] = useState('Default');
-  const [fontMode, setFontMode] = useState<'saans' | 'mono'>('saans');
-  const [autoDarkNotice, setAutoDarkNotice] = useState<false | 'dark' | 'light'>(false);
-
-  // Resolve theme synchronously before first paint (localStorage + timezone fallback)
-  useLayoutEffect(() => {
-    const saved = localStorage.getItem('rj-theme-pref');
-    if (saved) {
-      setActiveTheme(saved);
-      return;
-    }
-    const tzOffset = new Date().getTimezoneOffset() / -60;
-    if (isPastSundown(40, tzOffset * 15)) {
-      setActiveTheme('Slate');
-      setAutoDarkNotice('dark');
-    }
-  }, []);
-
-  // Load font preference
-  useLayoutEffect(() => {
-    const saved = localStorage.getItem('rj-font-pref');
-    if (saved === 'mono') {
-      setFontMode('mono');
-      document.documentElement.dataset.font = 'mono';
-    }
-  }, []);
-
-  // Apply font mode to DOM
-  useLayoutEffect(() => {
-    if (fontMode === 'mono') {
-      document.documentElement.dataset.font = 'mono';
-    } else {
-      delete document.documentElement.dataset.font;
-    }
-  }, [fontMode]);
-
-
-  // Auto-dismiss the initial dark notice only
-  useEffect(() => {
-    if (autoDarkNotice !== 'dark') return;
-    const timer = setTimeout(() => setAutoDarkNotice(false), 8000);
-    return () => clearTimeout(timer);
-  }, [autoDarkNotice]);
-
-  const handleThemeChange = (themeName: string) => {
-    setActiveTheme(themeName);
-    localStorage.setItem('rj-theme-pref', themeName);
-    setAutoDarkNotice(false);
-  };
-
-  const handleFontChange = (mode: 'saans' | 'mono') => {
-    setFontMode(mode);
-    if (mode === 'mono') {
-      localStorage.setItem('rj-font-pref', 'mono');
-    } else {
-      localStorage.removeItem('rj-font-pref');
-    }
-  };
-
-  const switchToLight = () => {
-    setActiveTheme('Default');
-    localStorage.setItem('rj-theme-pref', 'Default');
-    setAutoDarkNotice('light');
-  };
-
-  const switchToDark = () => {
-    setActiveTheme('Slate');
-    localStorage.setItem('rj-theme-pref', 'Slate');
-    setAutoDarkNotice('dark');
-  };
-
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Layout sliders
-  const [fontSize, setFontSize] = useState(14.4);
-  const [lineHeight, setLineHeight] = useState(1.25);
-  const [gapSize, setGapSize] = useState(2.1);
-  const [treeBranchSize, setTreeBranchSize] = useState(12);
-  const [contentWidth, setContentWidth] = useState(420);
-
-
-  // Text appearance
-  const [textLightness, setTextLightness] = useState(44);
-
-  // Site background color
-  const bgOptions = [
-    { label: 'White', value: '#ffffff' },
-    { label: 'Snow', value: '#fefefe' },
-    { label: 'Frost', value: '#fcfcfc' },
-    { label: 'Mist', value: '#fafafa' },
-    { label: 'Fog', value: '#f8f8f8' },
-    { label: 'Cloud', value: '#f5f5f5' },
-    { label: 'Ash', value: '#f2f2f2' },
-    { label: 'Stone', value: '#efefef' },
-  ];
-  const [siteBg, setSiteBg] = useState('#ffffff');
-
-  // Consolidated theme + appearance effect (layout to avoid flash)
-  const allThemeKeys = ['--bg', '--text', '--text-muted', '--text-subtle', '--text-faint', '--border', '--grid-line', '--card-bg', '--cursor', '--accent', '--accent-warm', '--accent-gradient'];
-  useLayoutEffect(() => {
-    const root = document.documentElement;
-    const theme = themeDefinitions.find(t => t.name === activeTheme);
-
-    if (activeTheme === 'Default' || !theme || Object.keys(theme.vars).length === 0) {
-      // Default: apply manual controls, remove theme-only vars
-      root.style.setProperty('--bg', siteBg);
-      root.style.setProperty('--text', `hsl(0, 0%, ${textLightness}%)`);
-      root.style.setProperty('--text-muted', `hsl(0, 0%, ${textLightness + 8}%)`);
-      root.style.setProperty('--text-subtle', `hsl(0, 0%, ${textLightness + 13}%)`);
-      root.style.setProperty('--text-faint', `hsl(0, 0%, ${textLightness + 20}%)`);
-      ['--border', '--grid-line', '--card-bg', '--cursor', '--accent', '--accent-warm', '--accent-gradient'].forEach(k =>
-        root.style.removeProperty(k)
-      );
-    } else {
-      Object.entries(theme.vars).forEach(([key, value]) => {
-        root.style.setProperty(key, value);
-      });
-    }
-
-    const isDark = ['Ember', 'Slate', 'Void', 'Soot'].includes(activeTheme);
-    root.dataset.theme = isDark ? 'dark' : 'light';
-
-    return () => {
-      allThemeKeys.forEach(k => root.style.removeProperty(k));
-    };
-  }, [activeTheme, siteBg, textLightness]);
-
-  // TV scanlines on home
-  const [showTV, setShowTV] = useState(false);
-
-  // Dot field on home
-  const [showDotField, setShowDotField] = useState(false);
-
-  // Memory effect controls
-  const [showMemory, setShowMemory] = useState(false);
-  const [memoryFx, setMemoryFx] = useState<MemoryFx>({ ...defaultFx });
-  const [showMemoryFx, setShowMemoryFx] = useState(false);
-  const updateFx = (key: keyof MemoryFx, val: number) =>
-    setMemoryFx((prev) => ({ ...prev, [key]: val }));
-  const applyMemoryPreset = (p: Partial<MemoryFx>) =>
-    setMemoryFx({ ...defaultFx, ...p });
-
-  // Draggable content position
-  const [contentOffset, setContentOffset] = useState({ x: 0, y: 0 }); // Fine-tune with Shift+drag
-  const [isDragging, setIsDragging] = useState(false);
-  const [showGrid, setShowGrid] = useState(false);
-  const dragStart = useRef({ x: 0, y: 0, offsetX: 0, offsetY: 0 });
-
-  const handleDragStart = (e: React.MouseEvent) => {
-    if (isMobile) return;
-    if (!e.shiftKey) return; // Hold shift to drag
-    e.preventDefault();
-    setIsDragging(true);
-    dragStart.current = {
-      x: e.clientX,
-      y: e.clientY,
-      offsetX: contentOffset.x,
-      offsetY: contentOffset.y
-    };
-  };
-
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const dx = e.clientX - dragStart.current.x;
-      const dy = e.clientY - dragStart.current.y;
-      setContentOffset({
-        x: dragStart.current.offsetX + dx,
-        y: dragStart.current.offsetY + dy
-      });
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging]);
-
-  // Distortion lens (runtime disabled, state kept for control panel)
-  const [lensSize, setLensSize] = useState(53);
-  const [lensBlur, setLensBlur] = useState(8);
-  const [lensHueRotate, setLensHueRotate] = useState(0);
-  const [lensSepia, setLensSepia] = useState(0);
-  const [lensSaturate, setLensSaturate] = useState(1);
-  const [lensContrast, setLensContrast] = useState(1);
-  const [lensBrightness, setLensBrightness] = useState(1);
-  const [lensInvert, setLensInvert] = useState(0);
-  const [lensBorder, setLensBorder] = useState(0);
-  const [lensBgTint, setLensBgTint] = useState(0);
-  const [showLensControls, setShowLensControls] = useState(false);
-
-  const applyLensPreset = (p: { size: number; blur: number; hue: number; sepia: number; saturate: number; contrast: number; brightness: number; invert: number; border: number; tint: number }) => {
-    setLensSize(p.size); setLensBlur(p.blur); setLensHueRotate(p.hue); setLensSepia(p.sepia);
-    setLensSaturate(p.saturate); setLensContrast(p.contrast); setLensBrightness(p.brightness);
-    setLensInvert(p.invert); setLensBorder(p.border); setLensBgTint(p.tint);
-  };
-
-  const lensPresets = [
-    { name: "Warm", size: 75, blur: 0.5, hue: 34, sepia: 0, saturate: 3, contrast: 1, brightness: 1.25, invert: 0, border: 0.04, tint: 0.30 },
-    { name: "Frost", size: 120, blur: 4, hue: 0, sepia: 0, saturate: 1, contrast: 1, brightness: 1.1, invert: 0, border: 0.08, tint: 0 },
-    { name: "Circle", size: 120, blur: 1, hue: 0, sepia: 0, saturate: 1, contrast: 1.3, brightness: 1.05, invert: 0, border: 0.12, tint: 0 },
-    { name: "Coral", size: 90, blur: 1.5, hue: 350, sepia: 0, saturate: 1.8, contrast: 1.15, brightness: 1, invert: 0, border: 0.1, tint: 0.05 },
-    { name: "Cyan", size: 120, blur: 6, hue: 180, sepia: 0, saturate: 1, contrast: 1, brightness: 1.2, invert: 0, border: 0, tint: 0.1 },
-  ];
-
-  // Lens runtime disabled — state kept for control panel
-
-  // Hide controls
-  const [showControls, setShowControls] = useState(false);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === '.' && e.metaKey) {
-        e.preventDefault();
-        setShowControls(prev => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  /* ── Showcase easter egg ── */
+  const [showcaseActive, setShowcaseActive] = useState(false);
+  const showcaseActiveRef = useRef(false);
+
+  /* ── Core hooks ── */
+  const { containerRef, overscrollXRef, isInputActiveRef } = useScrollPhysics(isMobile, booted, showcaseActiveRef);
+  const theme = useTheme();
+  const { chars, setIsHovering } = useNameScramble();
 
   const mainRef = useRef<HTMLDivElement>(null);
+  const workPanelRef = useRef<HTMLDivElement>(null);
+
+  const { revealed, homePanelRef, closingPanelRef } = usePanelReveal(
+    isMobile, booted, showcaseActiveRef, overscrollXRef, isInputActiveRef, mainRef, workPanelRef,
+  );
+
   const infoContainerRef = useRef<HTMLDivElement>(null);
   const homeContainerRef = useRef<HTMLDivElement>(null);
-  const workPanelRef = useRef<HTMLDivElement>(null);
-  const writingPanelRef = useRef<HTMLDivElement>(null);
-  const workContainerRef = useRef<HTMLDivElement>(null);
-  const writingContainerRef = useRef<HTMLDivElement>(null);
-  const closingPanelRef = useRef<HTMLDivElement>(null);
-  const overscrollXRef = useRef(0);
-  const isInputActiveRef = useRef(false);
+
+  const { activePanel, activeWorkSub, showScrollHint, scrollToPanel, scrollToWorkSub } = usePanelNavigation(
+    isMobile, showcaseActiveRef,
+  );
+
+  const activePanelRef = useRef(activePanel);
+  activePanelRef.current = activePanel;
+
+  const { heldKeys, showWatModal, setShowWatModal } = useKeyTracker(isMobile, scrollToPanel, activePanelRef);
+  const { crosshairRef } = useCrosshair(isMobile);
+
+  /* ── Panel tilt ── */
   const [docExpanded, setDocExpanded] = useState(false);
-
-
-  // Subtle tilt on info container (disabled when expanded)
-  useEffect(() => {
-    if (isMobile || docExpanded) return;
-    const el = infoContainerRef.current;
-    if (!el) return;
-
-    const onMove = (e: MouseEvent) => {
-      const rect = el.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width - 0.5;
-      const y = (e.clientY - rect.top) / rect.height - 0.5;
-      el.style.transform = `perspective(1200px) rotateX(${-y * 0.4}deg) rotateY(${x * 0.4}deg) scale(1.005) translateY(-2px)`;
-    };
-
-    const onLeave = () => {
-      el.style.transform = '';
-    };
-
-    el.addEventListener('mousemove', onMove);
-    el.addEventListener('mouseleave', onLeave);
-    return () => {
-      el.removeEventListener('mousemove', onMove);
-      el.removeEventListener('mouseleave', onLeave);
-      el.style.transform = '';
-    };
-  }, [isMobile, docExpanded]);
-
-  // Subtle tilt on home container
-  useEffect(() => {
-    if (isMobile) return;
-    const el = homeContainerRef.current;
-    if (!el) return;
-
-    const onMove = (e: MouseEvent) => {
-      const rect = el.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width - 0.5;
-      const y = (e.clientY - rect.top) / rect.height - 0.5;
-      el.style.transform = `perspective(1200px) rotateX(${-y * 0.4}deg) rotateY(${x * 0.4}deg) scale(1.005) translateY(-2px)`;
-    };
-
-    const onLeave = () => {
-      el.style.transform = '';
-    };
-
-    el.addEventListener('mousemove', onMove);
-    el.addEventListener('mouseleave', onLeave);
-    return () => {
-      el.removeEventListener('mousemove', onMove);
-      el.removeEventListener('mouseleave', onLeave);
-      el.style.transform = '';
-    };
-  }, [isMobile]);
-
-  // Subtle tilt on work + writing containers
-  useEffect(() => {
-    if (isMobile) return;
-    const els = [workContainerRef.current, writingContainerRef.current].filter(Boolean) as HTMLElement[];
-    if (els.length === 0) return;
-
-    const handlers: (() => void)[] = [];
-    for (const el of els) {
-      const onMove = (e: MouseEvent) => {
-        const rect = el.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width - 0.5;
-        const y = (e.clientY - rect.top) / rect.height - 0.5;
-        el.style.transform = `perspective(1200px) rotateX(${-y * 0.4}deg) rotateY(${x * 0.4}deg) scale(1.005) translateY(-2px)`;
-      };
-      const onLeave = () => { el.style.transform = ''; };
-      el.addEventListener('mousemove', onMove);
-      el.addEventListener('mouseleave', onLeave);
-      handlers.push(() => {
-        el.removeEventListener('mousemove', onMove);
-        el.removeEventListener('mouseleave', onLeave);
-        el.style.transform = '';
-      });
-    }
-    return () => { handlers.forEach(fn => fn()); };
-  }, [isMobile]);
+  usePanelTilt(infoContainerRef, !isMobile && !docExpanded, booted);
+  usePanelTilt(homeContainerRef, !isMobile, booted);
 
   // Escape to close expanded doc
   useEffect(() => {
@@ -1236,290 +84,162 @@ export default function Home() {
     return () => window.removeEventListener('keydown', onKey);
   }, [docExpanded]);
 
-  const [activePanel, setActivePanel] = useState<PanelId | null>(null);
-  const scrollLockRef = useRef(false);
-  const [showScrollHint, setShowScrollHint] = useState(false);
-  const scrollHintDismissed = useRef(false);
+  /* ── Window-bar state ── */
+  const [statementWeight, setStatementWeight] = useState<'light' | 'regular' | 'medium'>('regular');
+  const [convictionsCollapsed, setConvictionsCollapsed] = useState(false);
+  const [showYears, setShowYears] = useState(true);
 
-  // Dismiss hint on first panel change or after timeout
-  useEffect(() => {
-    const timer = setTimeout(() => setShowScrollHint(false), 5000);
-    return () => clearTimeout(timer);
-  }, []);
+  /* ── Layout sliders ── */
+  const [fontSize, setFontSize] = useState(13.6);
+  const [lineHeight, setLineHeight] = useState(1.25);
+  const [gapSize, setGapSize] = useState(2.1);
+  const [treeBranchSize, setTreeBranchSize] = useState(12);
+  const [contentWidth, setContentWidth] = useState(420);
+  const [sectionSpacing, setSectionSpacing] = useState(40);
+  const ditherStyles = ['barcode', 'dotmatrix', 'halftone', 'zigzag'] as const;
+  const [ditherStyle, setDitherStyle] = useState<typeof ditherStyles[number]>('barcode');
 
-  useEffect(() => {
-    if (scrollHintDismissed.current) return;
-    if (activePanel === 'home') {
-      scrollHintDismissed.current = true;
-      setShowScrollHint(false);
-    }
-  }, [activePanel]);
+  /* ── Home panel effects ── */
+  const [showTV, setShowTV] = useState(false);
+  const [showDunes, setShowDunes] = useState(true);
+  const [showMemory, setShowMemory] = useState(false);
+  const [memoryFx, setMemoryFx] = useState<MemoryFx>({ ...defaultFx });
+  const [showMemoryFx, setShowMemoryFx] = useState(false);
+  const updateFx = (key: keyof MemoryFx, val: number) =>
+    setMemoryFx((prev) => ({ ...prev, [key]: val }));
+  const applyMemoryPreset = (p: Partial<MemoryFx>) =>
+    setMemoryFx({ ...defaultFx, ...p });
+  const [showGrid, setShowGrid] = useState(false);
 
-  const panelSelectorMap: Record<PanelId, string> = {
-    home: '.home-panel',
-    work: '.work-panel',
-    info: '.info-panel',
-    writing: '.writing-panel',
-  };
+  /* ── Controls visibility ── */
+  const [showControls, setShowControls] = useState(false);
 
-  const scrollToPanel = (panelId: PanelId) => {
-    setActivePanel(panelId);
-    // Lock scroll sync so it doesn't override during smooth scroll
-    scrollLockRef.current = true;
-    setTimeout(() => { scrollLockRef.current = false; }, 800);
-    const el = document.querySelector(panelSelectorMap[panelId]) as HTMLElement;
-    if (!el) return;
-    if (isMobile) {
-      window.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
-    } else {
-      // Center the panel horizontally in the viewport
-      const panelCenter = el.offsetLeft + el.offsetWidth / 2;
-      const target = panelCenter - window.innerWidth / 2;
-      document.documentElement.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
-    }
-  };
-
-  // Keyboard navigation: arrow keys + number keys
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-
-      // Number keys: 1, 2, 3... map to panels by index
-      const num = parseInt(e.key, 10);
-      if (num >= 1 && num <= PANELS.length) {
-        e.preventDefault();
-        scrollToPanel(PANELS[num - 1]);
-        playTick();
-        return;
-      }
-
-      // Arrow keys: step through panels
-      if (!e.shiftKey) {
-        const idx = activePanel ? PANELS.indexOf(activePanel) : -1;
-        if (e.key === 'ArrowRight' && idx < PANELS.length - 1) {
-          e.preventDefault();
-          scrollToPanel(PANELS[idx + 1]);
-          playTick();
-        } else if (e.key === 'ArrowLeft' && idx > 0) {
-          e.preventDefault();
-          scrollToPanel(PANELS[idx - 1]);
-          playTick();
-        }
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activePanel, isMobile]);
-
-  // Sync active panel with scroll position — nearest panel wins
-  useEffect(() => {
-    const selectors: [PanelId, string][] = [
-      ['home', '.home-panel'],
-      ['info', '.info-panel'],
-    ];
-    const onScroll = () => {
-      if (scrollLockRef.current) return;
-      const scrollPos = isMobile ? window.scrollY : document.documentElement.scrollLeft;
-      // Check if we're still in the welcome zone
-      const firstPanel = document.querySelector(selectors[0][1]) as HTMLElement;
-      if (firstPanel) {
-        const firstStart = isMobile ? firstPanel.offsetTop : firstPanel.offsetLeft;
-        if (scrollPos < firstStart * 0.4) {
-          setActivePanel(null);
-          return;
-        }
-      }
-      // Check if we're in the closing zone (past the last panel)
-      const lastPanel = document.querySelector(selectors[selectors.length - 1][1]) as HTMLElement;
-      if (lastPanel) {
-        const lastEnd = isMobile
-          ? lastPanel.offsetTop + lastPanel.offsetHeight
-          : lastPanel.offsetLeft + lastPanel.offsetWidth;
-        if (scrollPos > lastEnd - (isMobile ? window.innerHeight : window.innerWidth) * 0.6) {
-          setActivePanel(null);
-          return;
-        }
-      }
-
-      let closest: PanelId = 'home';
-      let minDist = Infinity;
-      for (const [id, sel] of selectors) {
-        const el = document.querySelector(sel) as HTMLElement;
-        if (!el) continue;
-        const start = isMobile ? el.offsetTop : el.offsetLeft;
-        const dist = Math.abs(scrollPos - start);
-        if (dist < minDist) {
-          minDist = dist;
-          closest = id;
-        }
-      }
-      setActivePanel(closest);
-    };
-    document.addEventListener('scroll', onScroll, { passive: true });
-    return () => document.removeEventListener('scroll', onScroll);
-  }, [isMobile]);
-
-
-  // Key tracker
-  const [heldKeys, setHeldKeys] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (isMobile) return;
-    const keys = new Set<string>();
-
-    const fmt = (key: string) => {
-      if (key === 'Meta') return 'Cmd';
-      if (key === 'Control') return 'Ctrl';
-      if (key === ' ') return 'Space';
-      if (key === 'ArrowUp') return '\u2191';
-      if (key === 'ArrowDown') return '\u2193';
-      if (key === 'ArrowLeft') return '\u2190';
-      if (key === 'ArrowRight') return '\u2192';
-      if (key === 'Escape') return 'Esc';
-      if (key.length === 1) return key.toUpperCase();
-      return key;
-    };
-
-    const sync = () => setHeldKeys([...keys]);
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.repeat) return;
-      keys.add(fmt(e.key));
-      sync();
-    };
-    const onKeyUp = (e: KeyboardEvent) => {
-      keys.delete(fmt(e.key));
-      sync();
-    };
-    const onMouseDown = (e: MouseEvent) => {
-      keys.add(e.button === 2 ? 'Right Click' : 'Click');
-      sync();
-    };
-    const onMouseUp = (e: MouseEvent) => {
-      keys.delete(e.button === 2 ? 'Right Click' : 'Click');
-      sync();
-    };
-    const onBlur = () => { keys.clear(); sync(); };
-
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('keyup', onKeyUp);
-    window.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mouseup', onMouseUp);
-    window.addEventListener('blur', onBlur);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('keyup', onKeyUp);
-      window.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mouseup', onMouseUp);
-      window.removeEventListener('blur', onBlur);
-    };
-  }, [isMobile]);
-
-  // Easter egg: hold Shift+Enter for 5s
-  const [showWatModal, setShowWatModal] = useState(false);
-  const shiftEnterStart = useRef<number | null>(null);
-  const watTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Keep a ref to activePanel so Shift+Enter handler can read it without stale closures
-  const activePanelRef = useRef(activePanel);
-  activePanelRef.current = activePanel;
-
-  // Shift+Enter cycles to next panel + track shift/enter held state
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
-        if (e.shiftKey && !e.metaKey && !e.ctrlKey) {
-          e.preventDefault();
-          // Cycle through panels
-          const currentIdx = PANELS.indexOf(activePanelRef.current as PanelId);
-          const next = PANELS[(currentIdx + 1) % PANELS.length];
-          scrollToPanel(next);
-          playTick();
-          if (!shiftEnterStart.current) {
-            shiftEnterStart.current = Date.now();
-            watTimer.current = setTimeout(() => {
-              setShowWatModal(true);
-              shiftEnterStart.current = null;
-            }, 5700);
-          }
-        }
+      if (e.key === '.' && e.metaKey) {
+        e.preventDefault();
+        setShowControls(prev => !prev);
       }
-    };
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === 'Shift') {
-        shiftEnterStart.current = null;
-        if (watTimer.current) { clearTimeout(watTimer.current); watTimer.current = null; }
+      if (e.key === '/' && e.metaKey && e.shiftKey) {
+        e.preventDefault();
+        triggerShowcase();
       }
-    };
-    const handleBlur = () => {
-      shiftEnterStart.current = null;
-      if (watTimer.current) { clearTimeout(watTimer.current); watTimer.current = null; }
     };
     window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('blur', handleBlur);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('blur', handleBlur);
-      if (watTimer.current) clearTimeout(watTimer.current);
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Custom crosshair cursor
-  const crosshairRef = useRef<HTMLDivElement>(null);
+  /* ── Panel showcase easter egg ── */
+  const triggerShowcaseRef = useRef<() => void>(() => {});
+  const triggerShowcase = () => triggerShowcaseRef.current();
+  triggerShowcaseRef.current = () => {
+    if (showcaseActiveRef.current || isMobile) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-  useEffect(() => {
-    if (isMobile) return;
-    const el = crosshairRef.current;
-    if (!el) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      el.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+    showcaseActiveRef.current = true;
+    setShowcaseActive(true);
 
-      const target = e.target as HTMLElement;
-      const isLink = target.closest('a, button, [role="button"]');
-      const isCard = target.closest('.case-card');
-      const isPanel = target.closest('.spatial-panel, .statement-box');
+    const savedScroll = document.documentElement.scrollLeft;
+    const maxScroll = Math.max(1, document.documentElement.scrollWidth - window.innerWidth);
+    const panels = Array.from(container.querySelectorAll(
+      '.welcome-panel, .home-panel, .info-panel, .closing-panel'
+    )) as HTMLElement[];
 
-      if (isCard) el.dataset.size = 'xl';
-      else if (isLink) el.dataset.size = 'lg';
-      else if (isPanel) el.dataset.size = 'md';
-      else el.dataset.size = 'sm';
+    playWhoosh();
+
+    const startTime = performance.now();
+    const TOTAL = 2500;
+    const LIFT_END = 300;
+    const SPIN_END = 2000;
+
+    const easeOut = (x: number) => 1 - Math.pow(1 - x, 3);
+    const easeInOut = (x: number) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+
+    const applyCarousel = (intensity: number) => {
+      panels.forEach((panel) => {
+        const rect = panel.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const off = (cx - window.innerWidth / 2) / window.innerWidth;
+        const ry = off * 50 * intensity;
+        const tz = -Math.abs(off) * 150 * intensity;
+        panel.style.transform = `perspective(800px) rotateY(${ry}deg) translateZ(${tz}px)`;
+        panel.style.transformOrigin = 'center center';
+      });
     };
 
-    const handleMouseLeave = () => { el.style.opacity = '0'; };
-    const handleMouseEnter = () => { el.style.opacity = '1'; };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseleave', handleMouseLeave);
-    document.addEventListener('mouseenter', handleMouseEnter);
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseleave', handleMouseLeave);
-      document.removeEventListener('mouseenter', handleMouseEnter);
+    const cleanup = () => {
+      container.style.transform = '';
+      container.style.transformOrigin = '';
+      container.style.filter = '';
+      panels.forEach((panel) => {
+        panel.style.transform = '';
+        panel.style.transformOrigin = '';
+      });
+      document.documentElement.scrollLeft = savedScroll;
+      showcaseActiveRef.current = false;
+      setShowcaseActive(false);
     };
-  }, [isMobile]);
 
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+
+      if (elapsed <= LIFT_END) {
+        const p = easeOut(elapsed / LIFT_END);
+        container.style.transform = `scale(${1 - 0.15 * p})`;
+        container.style.transformOrigin = '50% 50%';
+        applyCarousel(p * 0.3);
+      } else if (elapsed <= SPIN_END) {
+        const rawP = (elapsed - LIFT_END) / (SPIN_END - LIFT_END);
+        const p = easeInOut(rawP);
+        document.documentElement.scrollLeft = maxScroll * Math.sin(p * Math.PI);
+        const speed = Math.abs(Math.cos(p * Math.PI));
+        container.style.filter = speed > 0.1 ? `blur(${speed * 3}px)` : '';
+        container.style.transform = 'scale(0.85)';
+        container.style.transformOrigin = '50% 50%';
+        applyCarousel(1);
+      } else if (elapsed <= TOTAL) {
+        const rawP = (elapsed - SPIN_END) / (TOTAL - SPIN_END);
+        const p = easeOut(rawP);
+        const bounce = 1 + Math.sin(rawP * Math.PI) * 0.02 * (1 - rawP);
+        container.style.transform = `scale(${Math.min(0.85 + 0.15 * p * bounce, 1.02)})`;
+        container.style.transformOrigin = '50% 50%';
+        container.style.filter = '';
+        document.documentElement.scrollLeft = savedScroll * easeOut(rawP);
+        applyCarousel(1 - p);
+      }
+
+      if (elapsed < TOTAL) {
+        requestAnimationFrame(animate);
+      } else {
+        cleanup();
+      }
+    };
+
+    requestAnimationFrame(animate);
+  };
+
+  /* ── Statement lines ── */
   const statementLines: (string | ReactNode)[] = [
     "Creative technologist building tools, interfaces, and objects",
     "Drawn to things that feel considered and stay out of the way",
     <>Currently exploring <span className="link-preview-wrap"><a href="https://en.wikipedia.org/wiki/Calm_technology" target="_blank" rel="noopener noreferrer">calm technology<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a><span className="link-preview" aria-hidden="true"><span className="link-preview-title">Calm technology</span><span className="link-preview-desc">Technology designed to inform without demanding attention. Coined by Mark Weiser &amp; John Seely Brown at Xerox PARC, 1995.</span><span className="link-preview-url">en.wikipedia.org</span></span></span></>,
   ];
 
-  const workProjects = [
-    { name: "Context", role: "Founding Designer", year: "2025", href: "https://context.ai", img: "/Context/Landing Hero.png" },
-    { name: "Humanoid Index", role: "Design + Engineering", year: "2026", href: "https://humanoids-index.com", img: "/Humanoid Index/CleanShot 2026-02-06 at 14.40.42@2x.png" },
-    { name: "Share", role: "Design + Prototyping", year: "2024", img: "/Share/Share Work - Cover (1).png" },
-    { name: "ESP32 Weather Display", role: "Hardware + Software", year: "2024", img: "/Esp32-weatherdisplay/B83BE970-9380-4464-A007-CD0E7A8B7CD2_1_105_c.jpeg" },
-  ];
+  /* ── Boot gate render ── */
+  if (!booted) {
+    return <BootSequence onComplete={() => setBooted(true)} />;
+  }
 
-
-
+  /* ── Main render ── */
   return (
+    <>
+    {/* Home — hidden for now, ref kept for hooks */}
+    <div ref={homePanelRef} className="home-panel" style={{ display: 'none' }} />
     <div
-      className="horizontal-scroll-container"
+      className={`horizontal-scroll-container${showcaseActive ? ' showcase-active' : ''}${activePanel === 'work' || activePanel === null ? ' work-expanded' : ''}`}
       ref={containerRef}
     >
       <StatusBar currentSection={activePanel ?? 'home'} />
@@ -1527,6 +247,9 @@ export default function Home() {
         activePanel={activePanel}
         onSelect={(panel) => { scrollToPanel(panel); playTick(); }}
         isMobile={isMobile}
+        workSubCount={4}
+        activeWorkSub={activeWorkSub}
+        onSelectWorkSub={(i) => { scrollToWorkSub(i); playTick(); }}
       />
       {!isMobile && showControls && heldKeys.length > 0 && (
         <div className="key-tracker">
@@ -1546,23 +269,9 @@ export default function Home() {
       {/* Welcome — entrance */}
       <div className="welcome-panel" onClick={() => scrollToPanel('home')}>
         <span className="welcome-name">Roy Jad</span>
+        {!isMobile && <span className={`welcome-scroll-cue${revealed ? ' hide' : ''}`}>&rarr;</span>}
       </div>
 
-      {/* Home — typewriter intro */}
-      <div ref={homePanelRef} className={`home-panel${showTV ? ' home-tv' : ''}${revealed ? ' revealed' : ''}`}>
-        {showTV && <div className="home-scanbar" />}
-        {showMemory && <MemorySlideshow fx={memoryFx} />}
-        <div className="panel-title">Home</div>
-        <div className="home-container" ref={homeContainerRef} onClick={() => { if (activePanel !== 'home') { scrollToPanel('home'); } }}>
-          {!isMobile && showDotField && <DotField />}
-          <div className="home-text">
-            <div>
-              <p className="home-clock">{currentTime}</p>
-              <p className="home-subtitle">SF, CA</p>
-            </div>
-          </div>
-        </div>
-      </div>
       {/* 12-Column Grid Overlay (debug) */}
       {showGrid && (
         <div className="design-grid">
@@ -1573,13 +282,10 @@ export default function Home() {
               </div>
             ))}
           </div>
-          {/* Center line */}
           <div className="grid-line grid-line-v grid-line-center" style={{ left: '50%' }} />
         </div>
       )}
 
-
-      {/* Controls toggle button - hidden, use ⌘. to open */}
       {/* Appearance controls panel */}
       {showControls && <div className="control-panel control-panel-appearance">
         <div className="control-panel-row">
@@ -1588,9 +294,9 @@ export default function Home() {
             {bgOptions.map((opt) => (
               <button
                 key={opt.value}
-                className={`bg-swatch ${siteBg === opt.value ? 'active' : ''}`}
+                className={`bg-swatch ${theme.siteBg === opt.value ? 'active' : ''}`}
                 style={{ background: opt.value }}
-                onClick={() => { setSiteBg(opt.value); setActiveTheme('Default'); }}
+                onClick={() => { theme.setSiteBg(opt.value); theme.setActiveTheme('Default'); }}
                 title={`${opt.label} (${opt.value})`}
               />
             ))}
@@ -1603,10 +309,10 @@ export default function Home() {
             min="0"
             max="85"
             step="1"
-            value={textLightness}
-            onChange={(e) => { setTextLightness(parseInt(e.target.value)); setActiveTheme('Default'); }}
+            value={theme.textLightness}
+            onChange={(e) => { theme.setTextLightness(parseInt(e.target.value)); theme.setActiveTheme('Default'); }}
           />
-          <span className="control-panel-value">{textLightness}%</span>
+          <span className="control-panel-value">{theme.textLightness}%</span>
         </div>
         <div className="control-panel-slider">
           <span className="control-panel-label">Size</span>
@@ -1632,6 +338,30 @@ export default function Home() {
           />
           <span className="control-panel-value">{contentWidth}px</span>
         </div>
+        <div className="control-panel-slider">
+          <span className="control-panel-label">Sections</span>
+          <input
+            type="range"
+            min="4"
+            max="48"
+            step="1"
+            value={sectionSpacing}
+            onChange={(e) => setSectionSpacing(parseInt(e.target.value))}
+          />
+          <span className="control-panel-value">{sectionSpacing}px</span>
+        </div>
+        <div className="control-panel-row">
+          <span className="control-panel-label">Header</span>
+          {ditherStyles.map((s) => (
+            <button
+              key={s}
+              className={`control-panel-toggle ${ditherStyle === s ? 'active' : ''}`}
+              onClick={() => setDitherStyle(s)}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
         <div className="control-panel-divider" />
         <div className="control-panel-row">
           <span className="control-panel-label">Theme</span>
@@ -1639,9 +369,9 @@ export default function Home() {
             {themeDefinitions.map((t) => (
               <button
                 key={t.name}
-                className={`bg-swatch ${activeTheme === t.name ? 'active' : ''}`}
+                className={`bg-swatch ${theme.activeTheme === t.name ? 'active' : ''}`}
                 style={t.vars['--bg'] ? { background: t.vars['--bg'] } : undefined}
-                onClick={() => handleThemeChange(t.name)}
+                onClick={() => theme.handleThemeChange(t.name)}
                 title={t.name}
               />
             ))}
@@ -1650,26 +380,26 @@ export default function Home() {
         <div className="control-panel-row">
           <span className="control-panel-label">Font</span>
           <button
-            className={`control-panel-toggle ${fontMode === 'saans' ? 'active' : ''}`}
-            onClick={() => handleFontChange('saans')}
+            className={`control-panel-toggle ${theme.fontMode === 'saans' ? 'active' : ''}`}
+            onClick={() => theme.handleFontChange('saans')}
           >
             Saans
           </button>
           <button
-            className={`control-panel-toggle ${fontMode === 'mono' ? 'active' : ''}`}
-            onClick={() => handleFontChange('mono')}
+            className={`control-panel-toggle ${theme.fontMode === 'mono' ? 'active' : ''}`}
+            onClick={() => theme.handleFontChange('mono')}
           >
             Mono
           </button>
         </div>
         <div className="control-panel-divider" />
         <div className="control-panel-row">
-          <span className="control-panel-label">Lens</span>
+          <span className="control-panel-label">Dunes</span>
           <button
-            className={`control-panel-toggle ${showLensControls ? 'active' : ''}`}
-            onClick={() => setShowLensControls(prev => !prev)}
+            className={`control-panel-toggle ${showDunes ? 'active' : ''}`}
+            onClick={() => setShowDunes(prev => !prev)}
           >
-            {showLensControls ? 'On' : 'Off'}
+            {showDunes ? 'On' : 'Off'}
           </button>
         </div>
         <div className="control-panel-row">
@@ -1686,15 +416,6 @@ export default function Home() {
           >
             FX
           </button>}
-        </div>
-        <div className="control-panel-row">
-          <span className="control-panel-label">Dots</span>
-          <button
-            className={`control-panel-toggle ${showDotField ? 'active' : ''}`}
-            onClick={() => setShowDotField(prev => !prev)}
-          >
-            {showDotField ? 'On' : 'Off'}
-          </button>
         </div>
         <div className="control-panel-row">
           <span className="control-panel-label">TV</span>
@@ -1782,12 +503,12 @@ export default function Home() {
       <main
         ref={mainRef}
         className={`info-panel${docExpanded ? ' doc-expanded' : ''}${revealed ? ' revealed' : ''}`}
-        onMouseDown={handleDragStart}
         style={{
           '--base-font-size': `${fontSize}px`,
           '--line-height': lineHeight,
           '--gap-multiplier': gapSize,
           '--tree-branch-size': `${treeBranchSize}px`,
+          '--section-spacing': `${sectionSpacing}px`,
         } as React.CSSProperties}
       >
         <div className="panel-title">Info</div>
@@ -1796,11 +517,12 @@ export default function Home() {
           ref={infoContainerRef}
           onClick={() => { if (activePanel !== 'info') { scrollToPanel('info'); } }}
         >
+        <div className={`receipt-dither receipt-dither-${ditherStyle}`} aria-hidden="true" />
         <div className="info-grid">
           {/* Statement */}
           <section className="info-section info-section-statement intro-fade">
             <h2 className="section-label">About</h2>
-            <div className={`statement-text statement-weight-${statementWeight}`}>
+            <div className="statement-text">
               {statementLines.map((line, i) => <div key={i}>{line}</div>)}
             </div>
           </section>
@@ -1834,55 +556,46 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Work panel — Case Studies */}
-      <div ref={workPanelRef} className={`work-panel${revealed ? ' revealed' : ''}`}>
-        <div className="panel-title">Case Studies</div>
-        <div className="work-container" ref={workContainerRef}>
-          <section className="info-section info-section-cases">
-            <div className="case-cards">
-              {[
-                { href: "https://humanoids-index.com", img: "/Humanoid Index/CleanShot 2026-02-06 at 14.40.42@2x.png", alt: "Humanoid Index", title: "Humanoid Index", sub: "A catalog of humanoid robots" },
-                { href: "https://context.ai", img: "/Context/Context landing hero.png", alt: "Context", title: "Context", sub: "Founding Designer", imgStyle: { objectFit: 'contain' as const, background: '#f7f7f7' } },
-                { img: "/Share/Share Work - Cover (1).png", alt: "Share", title: "Share", sub: "Phone-native work sharing" },
-                { img: "/Esp32-weatherdisplay/B83BE970-9380-4464-A007-CD0E7A8B7CD2_1_105_c.jpeg", alt: "IRL Projects", title: "IRL Projects", sub: "ESP32 E-Ink Weather Display", imgStyle: { objectPosition: 'bottom' } },
-              ].map((card, i) => {
-                const Tag = card.href ? 'a' : 'div';
-                const linkProps = card.href ? { href: card.href, target: "_blank" as const, rel: "noopener noreferrer" } : {};
-                return (
-                  <Tag
-                    key={i}
-                    className="case-card"
-                    {...linkProps}
-                    onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
-                      const angle = (Math.random() - 0.5) * 0.8;
-                      e.currentTarget.style.transform = `translateY(-2px) rotate(${angle}deg)`;
-                    }}
-                    onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
-                      e.currentTarget.style.transform = '';
-                    }}
-                  >
-                    <img className="case-card-img" src={card.img} alt={card.alt} style={card.imgStyle} />
-                    <div className="case-card-text">
-                      <span className="company">{card.title}{card.href && <svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg>}</span>
-                      <span className="years-inline">{card.sub}</span>
-                    </div>
-                  </Tag>
-                );
-              })}
+      {/* Project panels */}
+      {[
+        { title: "Humanoid Index", sub: "A catalog of humanoid robots", href: "https://humanoids-index.com", src: "/Humanoid Index/Humanoid Index walkthrough.mp4", video: true },
+        { title: "Context", sub: "Founding Designer", href: "https://context.ai", src: "/Context/Context landing page walk through.mp4", video: true },
+        { title: "Share", sub: "Phone-native work sharing", src: "/Share/share-soren-NEWSITE-animation.mov", video: true },
+        { title: "IRL Projects", sub: "ESP32 E-Ink Weather Display", src: "", textOnly: true },
+      ].map((project, i) => (
+        <div key={i} ref={i === 0 ? workPanelRef : undefined} className={`featured-panel${i === 0 ? ' work-panel' : ''}${revealed ? ' revealed' : ''}`} style={{ '--stack-idx': i } as React.CSSProperties}>
+          <div className="panel-title">Case Studies</div>
+          <div className="featured-container">
+            {project.video ? (
+              <video
+                ref={(el) => { if (el) el.playbackRate = 1.8; }}
+                src={project.src}
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+              />
+            ) : project.textOnly ? (
+              <div className="featured-placeholder" />
+            ) : (
+              <img src={project.src} alt={project.title} />
+            )}
+            <div className="featured-info">
+              <div className="featured-meta">
+                <span className="featured-title">{project.title}</span>
+                <span className="featured-sub">{project.sub}</span>
+              </div>
+              {project.href && (
+                <a href={project.href} target="_blank" rel="noopener noreferrer" className="featured-link">
+                  Visit
+                  <svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg>
+                </a>
+              )}
             </div>
-          </section>
+          </div>
         </div>
-      </div>
-
-      {/* Writing — coming soon (hidden) */}
-      {/* <div ref={writingPanelRef} className={`writing-panel${revealed ? ' revealed' : ''}`}>
-        <div className="writing-container" ref={writingContainerRef} onClick={() => { if (activePanel !== 'writing') { scrollToPanel('writing'); } }}>
-          <section className="info-section">
-            <h2 className="section-label">Writing</h2>
-            <p className="coming-soon">Coming soon</p>
-          </section>
-        </div>
-      </div> */}
+      ))}
 
       {/* Closing — bookend */}
       <div className="closing-panel" ref={closingPanelRef} onClick={() => scrollToPanel('info')}>
@@ -1894,83 +607,15 @@ export default function Home() {
       </div>
 
       {/* Auto-dark mode notification */}
-      {autoDarkNotice && (
+      {theme.autoDarkNotice && (
         <div className="auto-dark-notice">
           <span className="auto-dark-notice-text">
-            {autoDarkNotice === 'dark' ? 'Dark mode — it\u2019s past sundown' : 'Light mode'}
+            {theme.autoDarkNotice === 'dark' ? 'Dark mode — it\u2019s past sundown' : 'Light mode'}
           </span>
-          <button className="auto-dark-notice-cta" onClick={autoDarkNotice === 'dark' ? switchToLight : switchToDark}>
-            {autoDarkNotice === 'dark' ? 'Switch to light' : 'Switch to dark'}
+          <button className="auto-dark-notice-cta" onClick={theme.autoDarkNotice === 'dark' ? theme.switchToLight : theme.switchToDark}>
+            {theme.autoDarkNotice === 'dark' ? 'Switch to light' : 'Switch to dark'}
           </button>
-          <button className="auto-dark-notice-dismiss" onClick={() => setAutoDarkNotice(false)}>✕</button>
-        </div>
-      )}
-      {showLensControls && (
-        <div className="control-panel control-panel-lens">
-          <div className="control-panel-presets">
-            {lensPresets.map((p) => (
-              <button key={p.name} className="control-panel-preset-btn" onClick={() => applyLensPreset(p)}>
-                {p.name}
-              </button>
-            ))}
-          </div>
-          <div className="control-panel-slider">
-            <span className="control-panel-label">Size</span>
-            <input type="range" min="40" max="300" step="1" value={lensSize} onChange={e => setLensSize(parseInt(e.target.value))} />
-            <span className="control-panel-value">{lensSize}px</span>
-          </div>
-          <div className="control-panel-slider">
-            <span className="control-panel-label">Blur</span>
-            <input type="range" min="0" max="12" step="0.5" value={lensBlur} onChange={e => setLensBlur(parseFloat(e.target.value))} />
-            <span className="control-panel-value">{lensBlur}</span>
-          </div>
-          <div className="control-panel-slider">
-            <span className="control-panel-label">Hue</span>
-            <input type="range" min="0" max="360" step="1" value={lensHueRotate} onChange={e => setLensHueRotate(parseInt(e.target.value))} />
-            <span className="control-panel-value">{lensHueRotate}°</span>
-          </div>
-          <div className="control-panel-slider">
-            <span className="control-panel-label">Sepia</span>
-            <input type="range" min="0" max="1" step="0.05" value={lensSepia} onChange={e => setLensSepia(parseFloat(e.target.value))} />
-            <span className="control-panel-value">{lensSepia.toFixed(2)}</span>
-          </div>
-          <div className="control-panel-slider">
-            <span className="control-panel-label">Saturate</span>
-            <input type="range" min="0" max="3" step="0.1" value={lensSaturate} onChange={e => setLensSaturate(parseFloat(e.target.value))} />
-            <span className="control-panel-value">{lensSaturate.toFixed(1)}</span>
-          </div>
-          <div className="control-panel-slider">
-            <span className="control-panel-label">Contrast</span>
-            <input type="range" min="0.5" max="2" step="0.05" value={lensContrast} onChange={e => setLensContrast(parseFloat(e.target.value))} />
-            <span className="control-panel-value">{lensContrast.toFixed(2)}</span>
-          </div>
-          <div className="control-panel-slider">
-            <span className="control-panel-label">Bright</span>
-            <input type="range" min="0.5" max="2" step="0.05" value={lensBrightness} onChange={e => setLensBrightness(parseFloat(e.target.value))} />
-            <span className="control-panel-value">{lensBrightness.toFixed(2)}</span>
-          </div>
-          <div className="control-panel-slider">
-            <span className="control-panel-label">Invert</span>
-            <input type="range" min="0" max="1" step="0.05" value={lensInvert} onChange={e => setLensInvert(parseFloat(e.target.value))} />
-            <span className="control-panel-value">{lensInvert.toFixed(2)}</span>
-          </div>
-          <div className="control-panel-slider">
-            <span className="control-panel-label">Border</span>
-            <input type="range" min="0" max="0.4" step="0.01" value={lensBorder} onChange={e => setLensBorder(parseFloat(e.target.value))} />
-            <span className="control-panel-value">{lensBorder.toFixed(2)}</span>
-          </div>
-          <div className="control-panel-slider">
-            <span className="control-panel-label">Tint</span>
-            <input type="range" min="0" max="0.3" step="0.01" value={lensBgTint} onChange={e => setLensBgTint(parseFloat(e.target.value))} />
-            <span className="control-panel-value">{lensBgTint.toFixed(2)}</span>
-          </div>
-          <button className="control-panel-reset-btn" onClick={() => {
-            setLensSize(76); setLensBlur(8); setLensHueRotate(0); setLensSepia(0);
-            setLensSaturate(1); setLensContrast(1); setLensBrightness(1);
-            setLensInvert(0); setLensBorder(0); setLensBgTint(0);
-          }}>
-            Reset
-          </button>
+          <button className="auto-dark-notice-dismiss" onClick={() => theme.setAutoDarkNotice(false)}>✕</button>
         </div>
       )}
 
@@ -1992,5 +637,6 @@ export default function Home() {
         </div>
       )}
     </div>
+    </>
   );
 }
