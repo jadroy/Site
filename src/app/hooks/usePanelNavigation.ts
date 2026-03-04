@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { type PanelId, PANELS } from "../components/TabBar";
 import { playTick } from "../utils/audio";
 
@@ -12,7 +12,10 @@ export function usePanelNavigation(
   const [activeWorkSub, setActiveWorkSub] = useState<number | null>(null);
   const [showScrollHint, setShowScrollHint] = useState(false);
   const scrollLockRef = useRef(false);
+  const scrollLockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollHintDismissed = useRef(false);
+  const activePanelRef = useRef<PanelId | null>(null);
+  activePanelRef.current = activePanel;
 
   const panelSelectorMap: Record<PanelId, string> = {
     home: '.home-panel',
@@ -21,10 +24,15 @@ export function usePanelNavigation(
     writing: '.writing-panel',
   };
 
-  const scrollToPanel = (panelId: PanelId) => {
-    setActivePanel(panelId);
+  const engageScrollLock = useCallback((ms = 1200) => {
+    if (scrollLockTimer.current) clearTimeout(scrollLockTimer.current);
     scrollLockRef.current = true;
-    setTimeout(() => { scrollLockRef.current = false; }, 800);
+    scrollLockTimer.current = setTimeout(() => { scrollLockRef.current = false; }, ms);
+  }, []);
+
+  const scrollToPanel = useCallback((panelId: PanelId) => {
+    setActivePanel(panelId);
+    engageScrollLock();
     const el = document.querySelector(panelSelectorMap[panelId]) as HTMLElement;
     if (!el) return;
     if (isMobile) {
@@ -34,13 +42,12 @@ export function usePanelNavigation(
       const target = panelCenter - window.innerWidth / 2;
       document.documentElement.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
     }
-  };
+  }, [isMobile, engageScrollLock]);
 
   const scrollToWorkSub = (index: number) => {
     setActiveWorkSub(index);
     setActivePanel('work');
-    scrollLockRef.current = true;
-    setTimeout(() => { scrollLockRef.current = false; }, 800);
+    engageScrollLock();
     const panels = document.querySelectorAll('.featured-panel');
     const panel = panels[index] as HTMLElement;
     if (!panel) return;
@@ -83,7 +90,8 @@ export function usePanelNavigation(
       }
 
       if (!e.shiftKey) {
-        const idx = activePanel ? PANELS.indexOf(activePanel) : -1;
+        const current = activePanelRef.current;
+        const idx = current ? PANELS.indexOf(current) : -1;
         if (e.key === 'ArrowRight' && idx < PANELS.length - 1) {
           e.preventDefault();
           scrollToPanel(PANELS[idx + 1]);
@@ -97,7 +105,7 @@ export function usePanelNavigation(
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activePanel, isMobile]);
+  }, [scrollToPanel]);
 
   // Sync active panel with scroll position
   useEffect(() => {

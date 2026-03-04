@@ -267,7 +267,7 @@ export default function Home() {
         activePanel={activePanel}
         onSelect={(panel) => { scrollToPanel(panel); playTick(); }}
         isMobile={isMobile}
-        workSubCount={4}
+        workSubCount={3}
         activeWorkSub={activeWorkSub}
         onSelectWorkSub={(i) => { scrollToWorkSub(i); playTick(); }}
       />
@@ -579,8 +579,8 @@ export default function Home() {
       {[
         { title: "Humanoid Index", sub: "A catalog of humanoid robots", href: "https://humanoids-index.com", caseStudy: "/case-studies/humanoid-index", src: "/Humanoid Index/Humanoid Index walkthrough.mp4", video: true },
         { title: "Context", sub: "Founding Designer", href: "https://context.ai", src: "/Context/Context landing page walk through.mp4", video: true },
-        { title: "Share", sub: "Phone-native work sharing", src: "/Share/new-share-video.mp4", video: true },
-        { title: "IRL Projects", sub: "ESP32 E-Ink Weather Display", src: "", textOnly: true },
+        { title: "Share", sub: "Phone-native work sharing", src: "/Share/new-share-video.mp4", video: true, speed: 1 },
+        // { title: "IRL Projects", sub: "ESP32 E-Ink Weather Display", src: "", textOnly: true },
       ].map((project, i) => (
         <div key={i} ref={i === 0 ? workPanelRef : undefined} className={`featured-panel${i === 0 ? ' work-panel' : ''}${revealed ? ' revealed' : ''}`} style={{ '--stack-idx': i } as React.CSSProperties}>
           <div className="panel-title">Case Studies</div>
@@ -588,7 +588,7 @@ export default function Home() {
             <Link href={project.caseStudy} className="featured-container">
               {project.video ? (
                 <video
-                  ref={(el) => { if (el) el.playbackRate = 1.8; }}
+                  ref={(el) => { if (el) el.playbackRate = (project as any).speed ?? 1.8; }}
                   src={project.src}
                   autoPlay
                   loop
@@ -623,7 +623,7 @@ export default function Home() {
             <div className="featured-container">
               {project.video ? (
                 <video
-                  ref={(el) => { if (el) el.playbackRate = 1.8; }}
+                  ref={(el) => { if (el) el.playbackRate = (project as any).speed ?? 1.8; }}
                   src={project.src}
                   autoPlay
                   loop
@@ -653,8 +653,8 @@ export default function Home() {
         </div>
       ))}
 
-      {/* Outro — mirrored receipt panel */}
-      <aside className="outro-panel" ref={outroPanelRef}>
+      {/* Outro — mirrored receipt panel (hidden for now) */}
+      {/* <aside className="outro-panel" ref={outroPanelRef}>
         <div className="panel-title">Outro</div>
         <div className="outro-container">
           <div className="outro-grid">
@@ -662,14 +662,14 @@ export default function Home() {
             <div className="outro-line outro-sub" style={{ '--print-idx': 1 } as React.CSSProperties}>Say hello anytime</div>
           </div>
         </div>
-      </aside>
+      </aside> */}
 
       {/* Closing — bookend */}
       <div className="closing-panel" ref={closingPanelRef} onClick={() => scrollToPanel('info')}>
         <div className="closing-socials" onClick={(e) => e.stopPropagation()}>
           <a href="mailto:jadroy77@gmail.com">Email</a>
-          <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer">Twitter</a>
-          <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer">Twitter<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a>
+          <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer">LinkedIn<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a>
         </div>
       </div>
 
