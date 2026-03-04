@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, ReactNode } from "react";
+import Link from "next/link";
 import StatusBar from "./components/StatusBar";
 import TabBar, { type PanelId, PANELS } from "./components/TabBar";
 import SandDunes from "./components/SandDunes";
@@ -58,6 +59,25 @@ export default function Home() {
 
   const infoContainerRef = useRef<HTMLDivElement>(null);
   const homeContainerRef = useRef<HTMLDivElement>(null);
+  const outroPanelRef = useRef<HTMLElement>(null);
+
+  // Outro panel reveal
+  useEffect(() => {
+    if (!booted) return;
+    const el = outroPanelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.classList.add('revealed');
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [booted]);
 
   const { activePanel, activeWorkSub, showScrollHint, scrollToPanel, scrollToWorkSub } = usePanelNavigation(
     isMobile, showcaseActiveRef,
@@ -517,26 +537,25 @@ export default function Home() {
           ref={infoContainerRef}
           onClick={() => { if (activePanel !== 'info') { scrollToPanel('info'); } }}
         >
-        <div className={`receipt-dither receipt-dither-${ditherStyle}`} aria-hidden="true" />
         <div className="info-grid">
           {/* Statement */}
           <section className="info-section info-section-statement intro-fade">
-            <h2 className="section-label">About</h2>
+            <h2 className="section-label" style={{ '--print-idx': 0 } as React.CSSProperties}>About</h2>
             <div className="statement-text">
-              {statementLines.map((line, i) => <div key={i}>{line}</div>)}
+              {statementLines.map((line, i) => <div key={i} style={{ '--print-idx': i + 1 } as React.CSSProperties}>{line}</div>)}
             </div>
           </section>
 
           {/* Work */}
           <section className="info-section info-section-full intro-fade">
-            <h2 className="section-label">Work</h2>
+            <h2 className="section-label" style={{ '--print-idx': 4 } as React.CSSProperties}>Work</h2>
             <div className="work-row">
-              <a href="https://context.ai" className="work-card" target="_blank" rel="noopener noreferrer">
+              <a href="https://context.ai" className="work-card" target="_blank" rel="noopener noreferrer" style={{ '--print-idx': 5 } as React.CSSProperties}>
                 <span className="company">Context<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></span>
                 <span className="years-inline">Founding Designer</span>
                 {showYears && <span className="years-inline">2025</span>}
               </a>
-              <div className="work-card">
+              <div className="work-card" style={{ '--print-idx': 6 } as React.CSSProperties}>
                 <span className="company">Various companies</span>
                 <span className="years-inline">Independent Contractor</span>
                 {showYears && <span className="years-inline">2021–2025</span>}
@@ -546,10 +565,10 @@ export default function Home() {
 
           {/* Convictions */}
           <section className="info-section info-section-full intro-fade">
-            <h2 className="section-label">Convictions</h2>
-            <div className="conviction-item">Self-driving cars are necessary</div>
-            <div className="conviction-item">Clarity and intentionality are core to a good life</div>
-            <div className="conviction-item">Spatial computing is the future of interfaces</div>
+            <h2 className="section-label" style={{ '--print-idx': 7 } as React.CSSProperties}>Convictions</h2>
+            <div className="conviction-item" style={{ '--print-idx': 8 } as React.CSSProperties}>Self-driving cars are necessary</div>
+            <div className="conviction-item" style={{ '--print-idx': 9 } as React.CSSProperties}>Clarity and intentionality are core to a good life</div>
+            <div className="conviction-item" style={{ '--print-idx': 10 } as React.CSSProperties}>Spatial computing is the future of interfaces</div>
           </section>
 
         </div>
@@ -558,44 +577,92 @@ export default function Home() {
 
       {/* Project panels */}
       {[
-        { title: "Humanoid Index", sub: "A catalog of humanoid robots", href: "https://humanoids-index.com", src: "/Humanoid Index/Humanoid Index walkthrough.mp4", video: true },
+        { title: "Humanoid Index", sub: "A catalog of humanoid robots", href: "https://humanoids-index.com", caseStudy: "/case-studies/humanoid-index", src: "/Humanoid Index/Humanoid Index walkthrough.mp4", video: true },
         { title: "Context", sub: "Founding Designer", href: "https://context.ai", src: "/Context/Context landing page walk through.mp4", video: true },
-        { title: "Share", sub: "Phone-native work sharing", src: "/Share/share-soren-NEWSITE-animation.mov", video: true },
+        { title: "Share", sub: "Phone-native work sharing", src: "/Share/new-share-video.mp4", video: true },
         { title: "IRL Projects", sub: "ESP32 E-Ink Weather Display", src: "", textOnly: true },
       ].map((project, i) => (
         <div key={i} ref={i === 0 ? workPanelRef : undefined} className={`featured-panel${i === 0 ? ' work-panel' : ''}${revealed ? ' revealed' : ''}`} style={{ '--stack-idx': i } as React.CSSProperties}>
           <div className="panel-title">Case Studies</div>
-          <div className="featured-container">
-            {project.video ? (
-              <video
-                ref={(el) => { if (el) el.playbackRate = 1.8; }}
-                src={project.src}
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="metadata"
-              />
-            ) : project.textOnly ? (
-              <div className="featured-placeholder" />
-            ) : (
-              <img src={project.src} alt={project.title} />
-            )}
-            <div className="featured-info">
-              <div className="featured-meta">
-                <span className="featured-title">{project.title}</span>
-                <span className="featured-sub">{project.sub}</span>
-              </div>
-              {project.href && (
-                <a href={project.href} target="_blank" rel="noopener noreferrer" className="featured-link">
-                  Visit
-                  <svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg>
-                </a>
+          {project.caseStudy ? (
+            <Link href={project.caseStudy} className="featured-container">
+              {project.video ? (
+                <video
+                  ref={(el) => { if (el) el.playbackRate = 1.8; }}
+                  src={project.src}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+                />
+              ) : project.textOnly ? (
+                <div className="featured-placeholder" />
+              ) : (
+                <img src={project.src} alt={project.title} className={(project as any).contain ? 'featured-contain' : undefined} />
               )}
+              <div className="featured-info">
+                <div className="featured-meta">
+                  <span className="featured-title">{project.title}</span>
+                  <span className="featured-sub">{project.sub}</span>
+                </div>
+                <div className="featured-link-group">
+                  {project.href && (
+                    <a href={project.href} target="_blank" rel="noopener noreferrer" className="featured-link" onClick={(e) => e.stopPropagation()}>
+                      Visit
+                      <svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg>
+                    </a>
+                  )}
+                  <span className="featured-link">
+                    Case Study
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ) : (
+            <div className="featured-container">
+              {project.video ? (
+                <video
+                  ref={(el) => { if (el) el.playbackRate = 1.8; }}
+                  src={project.src}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+                />
+              ) : project.textOnly ? (
+                <div className="featured-placeholder" />
+              ) : (
+                <img src={project.src} alt={project.title} className={(project as any).contain ? 'featured-contain' : undefined} />
+              )}
+              <div className="featured-info">
+                <div className="featured-meta">
+                  <span className="featured-title">{project.title}</span>
+                  <span className="featured-sub">{project.sub}</span>
+                </div>
+                {project.href && (
+                  <a href={project.href} target="_blank" rel="noopener noreferrer" className="featured-link">
+                    Visit
+                    <svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg>
+                  </a>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       ))}
+
+      {/* Outro — mirrored receipt panel */}
+      <aside className="outro-panel" ref={outroPanelRef}>
+        <div className="panel-title">Outro</div>
+        <div className="outro-container">
+          <div className="outro-grid">
+            <div className="outro-line" style={{ '--print-idx': 0 } as React.CSSProperties}>Thanks for stopping by</div>
+            <div className="outro-line outro-sub" style={{ '--print-idx': 1 } as React.CSSProperties}>Say hello anytime</div>
+          </div>
+        </div>
+      </aside>
 
       {/* Closing — bookend */}
       <div className="closing-panel" ref={closingPanelRef} onClick={() => scrollToPanel('info')}>

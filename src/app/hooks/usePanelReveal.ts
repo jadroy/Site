@@ -40,7 +40,7 @@ export function usePanelReveal(
     const SPRING_DAMPING = 0.75;
     const MAX_COMPRESSION = 0.04;
     const EDGE_ZONE = 150;
-    const REVEAL_THRESHOLD = window.innerHeight * 0.35;
+    const REVEAL_THRESHOLD = window.innerHeight * 0.12;
     const REVEAL_PROGRESS_TRIGGER = 0.15;
 
     const computeProgress = (el: HTMLElement): number => {
@@ -91,8 +91,11 @@ export function usePanelReveal(
         const ty = REVEAL_THRESHOLD * (1 - smoothed);
         const scaleY = 1 - spring.value;
 
-        panel.style.transformOrigin = '';
-        panel.style.transform = `translateY(${ty}px) scaleY(${scaleY})`;
+        const rotate = panel === infoEl ? (1 - smoothed) * -2.5 : 0;
+        panel.style.transformOrigin = panel === infoEl ? 'center bottom' : '';
+        panel.style.transform = rotate
+          ? `translateY(${ty}px) rotate(${rotate}deg) scaleY(${scaleY})`
+          : `translateY(${ty}px) scaleY(${scaleY})`;
         panel.style.opacity = '1';
 
         if (progress > REVEAL_PROGRESS_TRIGGER && !revealedLocal) {
