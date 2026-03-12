@@ -86,7 +86,7 @@ export default function Home() {
   const activePanelRef = useRef(activePanel);
   activePanelRef.current = activePanel;
 
-  const { heldKeys, showWatModal, setShowWatModal } = useKeyTracker(isMobile, scrollToPanel, activePanelRef);
+  const { heldKeys, showWatModal, setShowWatModal, devMode } = useKeyTracker(isMobile, scrollToPanel, activePanelRef);
   const { crosshairRef } = useCrosshair(isMobile);
 
   /* ── Panel tilt ── */
@@ -611,7 +611,7 @@ export default function Home() {
       ].map((project, i) => (
         <div key={i} ref={i === 0 ? workPanelRef : undefined} className={`featured-panel${i === 0 ? ' work-panel' : ''}${revealed ? ' revealed' : ''}`} style={{ '--stack-idx': i } as React.CSSProperties}>
           <div className="panel-title">Case Studies</div>
-          <div className="featured-container">
+          <div className="featured-container" onClick={() => { if (activePanel !== 'work') { scrollToWorkSub(i); playTick(); } }}>
               {project.video ? (
                 <video
                   ref={(el) => { if (el) el.playbackRate = (project as any).speed ?? 1.8; }}
@@ -643,10 +643,37 @@ export default function Home() {
 
 {/* Closing — bookend */}
       <div className="closing-panel" ref={closingPanelRef} onClick={() => scrollToPanel('info')}>
-        <div className="closing-socials" onClick={(e) => e.stopPropagation()}>
-          <a href="mailto:jadroy77@gmail.com">Email</a>
-          <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer">Twitter<svg className="external-arrow" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a>
-          <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer">LinkedIn<svg className="external-arrow" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a>
+        <div className="closing-socials" onClick={(e) => e.stopPropagation()}
+          onMouseLeave={() => {
+            const caret = document.querySelector('.closing-socials-caret') as HTMLElement;
+            if (caret) caret.style.opacity = '0';
+          }}
+        >
+          <span className="closing-socials-caret">›</span>
+          {[
+            { href: "mailto:jadroy77@gmail.com", label: "Email" },
+            { href: "https://x.com/jadroy2", label: "X", external: true },
+            { href: "https://www.linkedin.com/in/royjad/", label: "LinkedIn", external: true },
+          ].map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              onMouseEnter={(e) => {
+                const caret = e.currentTarget.parentElement?.querySelector('.closing-socials-caret') as HTMLElement;
+                if (!caret) return;
+                const container = e.currentTarget.parentElement!;
+                const linkRect = e.currentTarget.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+                const top = linkRect.top - containerRect.top + linkRect.height / 2;
+                caret.style.top = `${top}px`;
+                caret.style.transform = link.external ? 'translateY(-50%) rotate(-45deg)' : 'translateY(-50%) rotate(0deg)';
+                caret.style.opacity = '1';
+              }}
+            >
+              {link.label}
+            </a>
+          ))}
         </div>
       </div>
 
@@ -681,7 +708,7 @@ export default function Home() {
         </div>
       )}
     </div>
-    <SocialsTuner />
+    {devMode && <SocialsTuner />}
     </>
   );
 }

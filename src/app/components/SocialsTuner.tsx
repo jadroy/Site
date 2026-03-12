@@ -17,7 +17,7 @@ const sliders: Slider[] = [
   { label: "Tracking", prop: "--socials-letter-spacing", min: -20, max: 10, step: 0.5, default: -16.5, unit: "px" },
   { label: "Line Height", prop: "--socials-line-height", min: 0.5, max: 1.5, step: 0.05, default: 0.9, unit: "" },
   { label: "Gap", prop: "--socials-gap", min: 0, max: 60, step: 1, default: 0, unit: "px" },
-  { label: "Left Padding", prop: "--socials-panel-padding", min: 0, max: 300, step: 4, default: 180, unit: "px" },
+  { label: "Left Padding", prop: "--socials-panel-padding", min: 0, max: 300, step: 4, default: 244, unit: "px" },
   { label: "Lightness", prop: "--socials-lightness", min: 0, max: 100, step: 1, default: 44, unit: "%" },
   { label: "Opacity", prop: "--socials-opacity", min: 0, max: 1, step: 0.05, default: 0.15, unit: "" },
   { label: "Hover Opacity", prop: "--socials-hover-opacity", min: 0, max: 1, step: 0.05, default: 0.85, unit: "" },

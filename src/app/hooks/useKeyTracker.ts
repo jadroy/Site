@@ -11,6 +11,7 @@ export function useKeyTracker(
 ) {
   const [heldKeys, setHeldKeys] = useState<string[]>([]);
   const [showWatModal, setShowWatModal] = useState(false);
+  const [devMode, setDevMode] = useState(false);
   const shiftEnterStart = useRef<number | null>(null);
   const watTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -67,6 +68,18 @@ export function useKeyTracker(
     };
   }, [isMobile]);
 
+  // Cmd+. toggles dev mode
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '.' && e.metaKey) {
+        e.preventDefault();
+        setDevMode(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   // Shift+Enter cycles to next panel + easter egg
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -108,5 +121,5 @@ export function useKeyTracker(
     };
   }, []);
 
-  return { heldKeys, showWatModal, setShowWatModal };
+  return { heldKeys, showWatModal, setShowWatModal, devMode };
 }
