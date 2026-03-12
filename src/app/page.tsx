@@ -104,6 +104,27 @@ export default function Home() {
     return () => window.removeEventListener('keydown', onKey);
   }, [docExpanded]);
 
+  /* ── Scroll-driven work panel expansion ── */
+  useEffect(() => {
+    if (isMobile || !booted) return;
+    const onScroll = () => {
+      const panel = workPanelRef.current;
+      const container = containerRef.current;
+      if (!panel || !container) return;
+      const scrollLeft = document.documentElement.scrollLeft;
+      const vw = window.innerWidth;
+      const panelLeft = panel.offsetLeft;
+      // Start expanding when panel is ~1.5 viewports away, fully expanded when ~0.3 away
+      const start = panelLeft - vw * 1.5;
+      const end = panelLeft - vw * 0.3;
+      const progress = Math.min(1, Math.max(0, (scrollLeft - start) / (end - start)));
+      container.style.setProperty('--expand-progress', String(progress));
+    };
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll(); // set initial value
+    return () => document.removeEventListener('scroll', onScroll);
+  }, [isMobile, booted]);
+
   /* ── Window-bar state ── */
   const [statementWeight, setStatementWeight] = useState<'light' | 'regular' | 'medium'>('regular');
   const [convictionsCollapsed, setConvictionsCollapsed] = useState(false);
@@ -273,7 +294,7 @@ export default function Home() {
     {/* Home — hidden for now, ref kept for hooks */}
     <div ref={homePanelRef} className="home-panel" style={{ display: 'none' }} />
     <div
-      className={`horizontal-scroll-container${showcaseActive ? ' showcase-active' : ''}${activePanel === 'work' || activePanel === null ? ' work-expanded' : ''}`}
+      className={`horizontal-scroll-container${showcaseActive ? ' showcase-active' : ''}`}
       ref={containerRef}
     >
       <StatusBar currentSection={activePanel ?? 'welcome'} />
@@ -623,9 +644,9 @@ export default function Home() {
 
       {/* Project panels */}
       {[
-        { title: "Humanoid Index", sub: "A catalog of humanoid robots", href: "https://humanoids-index.com", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/humanoid-walkthrough.mp4", video: true },
-        { title: "Context", sub: "Founding Designer", href: "https://context.ai", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/context-walkthrough.mp4", video: true },
-        { title: "Share", sub: "Phone-native work sharing", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/share-video.mp4", video: true, speed: 1.3 },
+        { title: "Humanoid Index", sub: "A catalog of humanoid robots", href: "https://humanoids-index.com", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/humanoid-walkthrough.mp4", poster: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/humanoid-poster.jpg", video: true },
+        { title: "Context", sub: "Founding Designer", href: "https://context.ai", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/context-walkthrough.mp4", poster: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/context-poster.jpg", video: true },
+        { title: "Share", sub: "Phone-native work sharing", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/share-video.mp4", poster: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/share-poster.jpg", video: true, speed: 1.3 },
         // { title: "IRL Projects", sub: "ESP32 E-Ink Weather Display", src: "", textOnly: true },
       ].map((project, i) => (
         <div key={i} ref={i === 0 ? workPanelRef : undefined} className={`featured-panel${i === 0 ? ' work-panel' : ''}${revealed ? ' revealed' : ''}`} style={{ '--stack-idx': i } as React.CSSProperties}>
@@ -635,11 +656,12 @@ export default function Home() {
                 <video
                   ref={(el) => { if (el) el.playbackRate = (project as any).speed ?? 1.8; }}
                   src={project.src}
+                  poster={(project as any).poster}
                   autoPlay
                   loop
                   muted
                   playsInline
-                  preload="metadata"
+                  preload="auto"
                 />
               ) : (
                 <img src={project.src} alt={project.title} />

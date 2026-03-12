@@ -187,7 +187,7 @@ export default function ShowcaseSection({ viewMode = "horizontal" }: { viewMode?
               <div className="showcase-grid-cards">
                 {section.items.map((item, index) => (
                   <div key={index} className="showcase-item">
-                    <ShowcaseCard item={item} />
+                    <ShowcaseCard item={item} sub={index === 0 ? section.sub : undefined} href={index === 0 ? section.href : undefined} />
                   </div>
                 ))}
               </div>

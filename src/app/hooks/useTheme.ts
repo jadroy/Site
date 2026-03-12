@@ -2,7 +2,7 @@
 
 import { useState, useLayoutEffect, useEffect } from "react";
 import { themeDefinitions } from "../constants";
-import { isPastSundown } from "../utils/daylight";
+
 
 const allThemeKeys = ['--bg', '--text', '--text-muted', '--text-subtle', '--text-faint', '--border', '--grid-line', '--card-bg', '--cursor', '--accent', '--accent-warm', '--accent-gradient'];
 
@@ -18,12 +18,6 @@ export function useTheme() {
     const saved = localStorage.getItem('rj-theme-pref');
     if (saved) {
       setActiveTheme(saved);
-      return;
-    }
-    const tzOffset = new Date().getTimezoneOffset() / -60;
-    if (isPastSundown(40, tzOffset * 15)) {
-      setActiveTheme('Slate');
-      setAutoDarkNotice('dark');
     }
   }, []);
 
