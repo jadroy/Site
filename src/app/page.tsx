@@ -109,6 +109,17 @@ export default function Home() {
   const [convictionsCollapsed, setConvictionsCollapsed] = useState(false);
   const [showYears, setShowYears] = useState(true);
 
+  /* ── Mobile accordion ── */
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['about']));
+  const toggleSection = (id: string) => {
+    setOpenSections(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   /* ── Layout sliders ── */
   const [fontSize, setFontSize] = useState(13.6);
   const [lineHeight, setLineHeight] = useState(1.25);
@@ -566,36 +577,44 @@ export default function Home() {
         >
         <div className="info-grid">
           {/* Statement */}
-          <section className="info-section info-section-statement intro-fade">
-            <h2 className="section-label" style={{ '--print-idx': 0 } as React.CSSProperties}>About</h2>
-            <div className="statement-text">
-              {statementLines.map((line, i) => <div key={i} style={{ '--print-idx': i + 1 } as React.CSSProperties}>{line}</div>)}
+          <section className={`info-section info-section-statement intro-fade${openSections.has('about') ? ' section-open' : ''}`}>
+            <h2 className="section-label" style={{ '--print-idx': 0 } as React.CSSProperties} onClick={() => isMobile && toggleSection('about')}>About</h2>
+            <div className="section-body">
+              <div className="statement-text">
+                {statementLines.map((line, i) => <div key={i} style={{ '--print-idx': i + 1 } as React.CSSProperties}>{line}</div>)}
+              </div>
             </div>
           </section>
 
           {/* Work */}
-          <section className="info-section info-section-full intro-fade">
-            <h2 className="section-label" style={{ '--print-idx': 4 } as React.CSSProperties}>Work</h2>
-            <div className="work-row">
-              <a href="https://context.ai" className="work-card" target="_blank" rel="noopener noreferrer" style={{ '--print-idx': 5 } as React.CSSProperties}>
-                <span className="company">Context<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></span>
-                <span className="years-inline">Founding Designer</span>
-                {showYears && <span className="years-inline">2025</span>}
-              </a>
-              <div className="work-card" style={{ '--print-idx': 6 } as React.CSSProperties}>
-                <span className="company">Various companies</span>
-                <span className="years-inline">Independent Contractor</span>
-                {showYears && <span className="years-inline">2021–2025</span>}
+          <section className={`info-section info-section-full intro-fade${openSections.has('work') ? ' section-open' : ''}`}>
+            <h2 className="section-label" style={{ '--print-idx': 4 } as React.CSSProperties} onClick={() => isMobile && toggleSection('work')}>Work</h2>
+            <div className="section-body">
+              <div className="work-row">
+                <a href="https://context.ai" className="work-card" target="_blank" rel="noopener noreferrer" style={{ '--print-idx': 5 } as React.CSSProperties}>
+                  <span className="company">Context<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></span>
+                  <span className="years-inline">Founding Designer</span>
+                  {showYears && <span className="years-inline">2025</span>}
+                </a>
+                <div className="work-card" style={{ '--print-idx': 6 } as React.CSSProperties}>
+                  <span className="company">Various companies</span>
+                  <span className="years-inline">Independent Contractor</span>
+                  {showYears && <span className="years-inline">2021–2025</span>}
+                </div>
               </div>
             </div>
           </section>
 
           {/* Convictions */}
-          <section className="info-section info-section-full intro-fade">
-            <h2 className="section-label" style={{ '--print-idx': 7 } as React.CSSProperties}>Convictions</h2>
-            <div className="conviction-item" style={{ '--print-idx': 8 } as React.CSSProperties}>Self-driving cars are necessary</div>
-            <div className="conviction-item" style={{ '--print-idx': 9 } as React.CSSProperties}>Clarity and intentionality are core to a good life</div>
-            <div className="conviction-item" style={{ '--print-idx': 10 } as React.CSSProperties}>Spatial computing is the future of interfaces</div>
+          <section className={`info-section info-section-full intro-fade${openSections.has('convictions') ? ' section-open' : ''}`}>
+            <h2 className="section-label" style={{ '--print-idx': 7 } as React.CSSProperties} onClick={() => isMobile && toggleSection('convictions')}>Convictions</h2>
+            <div className="section-body">
+              <div className="conviction-list">
+                <div className="conviction-item" style={{ '--print-idx': 8 } as React.CSSProperties}>Self-driving cars are necessary</div>
+                <div className="conviction-item" style={{ '--print-idx': 9 } as React.CSSProperties}>Clarity and intentionality are core to a good life</div>
+                <div className="conviction-item" style={{ '--print-idx': 10 } as React.CSSProperties}>Spatial computing is the future of interfaces</div>
+              </div>
+            </div>
           </section>
 
         </div>
@@ -604,13 +623,13 @@ export default function Home() {
 
       {/* Project panels */}
       {[
-        { title: "Humanoid Index", sub: "A catalog of humanoid robots", href: "https://humanoids-index.com", src: "/Humanoid Index/Humanoid Index walkthrough.mp4", video: true },
-        { title: "Context", sub: "Founding Designer", href: "https://context.ai", src: "/Context/Context landing page walk through.mp4", video: true },
-        { title: "Share", sub: "Phone-native work sharing", src: "/Share/new-share-video.mp4", video: true, speed: 1 },
+        { title: "Humanoid Index", sub: "A catalog of humanoid robots", href: "https://humanoids-index.com", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/humanoid-walkthrough.mp4", video: true },
+        { title: "Context", sub: "Founding Designer", href: "https://context.ai", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/context-walkthrough.mp4", video: true },
+        { title: "Share", sub: "Phone-native work sharing", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/share-video.mp4", video: true, speed: 1.3 },
         // { title: "IRL Projects", sub: "ESP32 E-Ink Weather Display", src: "", textOnly: true },
       ].map((project, i) => (
         <div key={i} ref={i === 0 ? workPanelRef : undefined} className={`featured-panel${i === 0 ? ' work-panel' : ''}${revealed ? ' revealed' : ''}`} style={{ '--stack-idx': i } as React.CSSProperties}>
-          <div className="panel-title">Case Studies</div>
+          <div className="panel-title">Work</div>
           <div className="featured-container" onClick={() => { scrollToWorkSub(i); playTick(); }}>
               {project.video ? (
                 <video

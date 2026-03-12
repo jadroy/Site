@@ -3,19 +3,19 @@
 import React, { useEffect, useRef, useState } from "react";
 
 const humanoidImages = [
-  { src: "/Humanoid Index/CleanShot 2026-02-06 at 14.41.55.mp4", alt: "Humanoid Index – Demo walkthrough", type: "video" },
+  { src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/humanoid-clip.mp4", alt: "Humanoid Index – Demo walkthrough", type: "video" },
   { src: "/Humanoid Index/CleanShot 2026-02-06 at 14.40.46@2x.png", alt: "Humanoid Index – Carousel view showing Neo by 1X Technologies", type: "image" },
   { src: "/Humanoid Index/CleanShot 2026-02-06 at 14.41.36@2x.png", alt: "Humanoid Index – Robot detail page", type: "image" },
   { src: "/Humanoid Index/CleanShot 2026-02-06 at 14.40.53@2x.png", alt: "Humanoid Index – Grid view of all humanoid robots", type: "image" },
 ];
 
 const contextImages = [
-  { src: "/Context/Context landing hero.mp4", alt: "Context Landing Hero Fade In", type: "video" },
-  { src: "/Context/Context landing page walk through.mp4", alt: "Context Landing Page Walk Through", type: "video" },
+  { src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/context-hero.mp4", alt: "Context Landing Hero Fade In", type: "video" },
+  { src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/context-walkthrough.mp4", alt: "Context Landing Page Walk Through", type: "video" },
 ];
 
 const shareImages = [
-  { src: "/Share/share-soren-NEWSITE-animation.mov", alt: "Share Animation", type: "video", playbackRate: 1.25, scale: 1.3 },
+  { src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/share-animation.mov", alt: "Share Animation", type: "video", playbackRate: 1.25, scale: 1.3 },
   { src: "/Share/Share Work NEW.png", alt: "Share Work – New", type: "image" },
   { src: "/Share/Share Work (2).png", alt: "Share Work 2", type: "image" },
   { src: "/Share/Share Work (9).png", alt: "Share Work 9", type: "image" },
@@ -34,7 +34,7 @@ const irlImages = [
 
 type ItemData = { src: string; alt: string; type: string; playbackRate?: number; scale?: number; objectPosition?: string };
 
-const ShowcaseCard = React.memo(function ShowcaseCard({ item }: { item: ItemData }) {
+const ShowcaseCard = React.memo(function ShowcaseCard({ item, sub, href }: { item: ItemData; sub?: string; href?: string }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -56,8 +56,21 @@ const ShowcaseCard = React.memo(function ShowcaseCard({ item }: { item: ItemData
     return () => observer.disconnect();
   }, [item.type]);
 
+  const infoBar = sub ? (
+    <div className="showcase-card-info">
+      <span className="showcase-card-sub">{sub}</span>
+      {href && (
+        <a href={href} target="_blank" rel="noopener noreferrer" className="showcase-card-visit" onClick={(e) => e.stopPropagation()}>
+          Visit
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg>
+        </a>
+      )}
+    </div>
+  ) : null;
+
   return item.type === "video" ? (
     <div className="showcase-card" ref={cardRef}>
+      {infoBar}
       {isVisible && (
         <video
           src={item.src}
@@ -77,6 +90,7 @@ const ShowcaseCard = React.memo(function ShowcaseCard({ item }: { item: ItemData
     </div>
   ) : (
     <div className="showcase-card">
+      {infoBar}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={item.src} alt={item.alt} style={item.objectPosition ? { objectPosition: item.objectPosition } : undefined} />
     </div>
@@ -87,11 +101,15 @@ type SectionData = {
   title: string;
   lines: React.ReactNode[];
   items: ItemData[];
+  sub?: string;
+  href?: string;
 };
 
 const sections: SectionData[] = [
   {
     title: "Humanoid Index",
+    sub: "A catalog of humanoid robots",
+    href: "https://humanoids-index.com",
     lines: [
       <><a href="https://humanoids-index.com" target="_blank" rel="noopener noreferrer" className="showcase-link">humanoids-index.com</a></>,
       <>I curated a list of humanoid robots</>,
@@ -100,6 +118,8 @@ const sections: SectionData[] = [
   },
   {
     title: "Context",
+    sub: "Founding Designer",
+    href: "https://context.ai",
     lines: [
       <>Founding Designer</>,
       <><a href="https://context.ai" target="_blank" rel="noopener noreferrer" className="showcase-link">context.ai</a></>,
@@ -108,6 +128,7 @@ const sections: SectionData[] = [
   },
   {
     title: "Share",
+    sub: "Phone-native work sharing",
     lines: [
       <>What if your phone knew when to share your work?</>,
     ],
@@ -190,7 +211,7 @@ export default function ShowcaseSection({ viewMode = "horizontal" }: { viewMode?
           <div className="showcase-cards-horizontal">
             {section.items.map((item, index) => (
               <div key={index} className="showcase-item">
-                <ShowcaseCard item={item} />
+                <ShowcaseCard item={item} sub={index === 0 ? section.sub : undefined} href={index === 0 ? section.href : undefined} />
               </div>
             ))}
           </div>

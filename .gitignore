@@ -35,3 +35,8 @@ next-env.d.ts
 # OS
 .DS_Store
 Thumbs.db
+
+# Videos (hosted on Cloudflare R2)
+*.mp4
+*.mov
+*.webm

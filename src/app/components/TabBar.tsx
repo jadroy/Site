@@ -43,9 +43,7 @@ export default function TabBar({
     else tabRefs.current.delete(id);
   }, []);
 
-  const indicatorStyle = useIndicatorStyle(activePanel, activeWorkSub, tabRefs, trackRef);
-
-  const isWorkActive = activePanel === "work";
+  const indicatorStyle = useIndicatorStyle(activePanel, tabRefs, trackRef);
 
   // Snap positions as percentages of viewport width
   const SNAP_POINTS = [0.15, 0.35, 0.5, 0.65, 0.85];
@@ -189,18 +187,7 @@ export default function TabBar({
               className={`tab-bar__tab${activePanel === id ? " tab-bar__tab--active" : ""}`}
               onClick={() => onTabClick(id)}
             >
-              {id === "work" && workSubCount > 0 && !isMobile ? (
-                <span className={`tab-bar__dots tab-bar__dots--always`}>
-                  {Array.from({ length: workSubCount }, (_, i) => (
-                    <span
-                      key={i}
-                      className={`tab-bar__dot${activeWorkSub === i ? " tab-bar__dot--active" : ""}`}
-                    />
-                  ))}
-                </span>
-              ) : (
-                <span className="tab-bar__label">{LABELS[id]}</span>
-              )}
+              <span className="tab-bar__label">{LABELS[id]}</span>
               {!isMobile && (
                 <span className="tab-bar__hint">{TAB_PANELS.indexOf(id) + 1}</span>
               )}
@@ -213,15 +200,13 @@ export default function TabBar({
   );
 }
 
-/** Custom hook: compute indicator left + width + height from active tab element */
+/** Compute indicator position from active tab element */
 function useIndicatorStyle(
   activePanel: PanelId | null,
-  activeWorkSub: number | null,
   tabRefs: React.MutableRefObject<Map<PanelId, HTMLButtonElement>>,
   trackRef: React.RefObject<HTMLDivElement | null>,
 ): React.CSSProperties {
   const [style, setStyle] = useState<React.CSSProperties>({});
-  const resizeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     const update = () => {
@@ -233,50 +218,20 @@ function useIndicatorStyle(
       const tab = tabRefs.current.get(activePanel);
       if (!tab) return;
       const trackRect = track.getBoundingClientRect();
-
-      // When work is active, hide indicator — dots take over
-      if (activePanel === "work") {
-        setStyle((prev) => ({ ...prev, opacity: 0 }));
-        return;
-      }
-
-      // Default: indicator hugs the tab label
       const tabRect = tab.getBoundingClientRect();
-      const label = tab.querySelector(".tab-bar__label") as HTMLElement | null;
-      const labelRect = label?.getBoundingClientRect();
-      const left = tabRect.left - trackRect.left;
-      const tabPadLeft = labelRect ? labelRect.left - tabRect.left : 14;
-      const contentWidth = labelRect
-        ? labelRect.width + tabPadLeft * 2
-        : tabRect.width;
 
       setStyle({
-        left,
+        left: tabRect.left - trackRect.left,
         top: tabRect.top - trackRect.top,
-        width: contentWidth,
+        width: tabRect.width,
         height: tabRect.height,
         opacity: 1,
       });
     };
     update();
     window.addEventListener("resize", update);
-
-    const observer = new ResizeObserver(() => {
-      if (!activePanel) return;
-      clearTimeout(resizeTimerRef.current);
-      resizeTimerRef.current = setTimeout(update, 420);
-    });
-    const workTab = tabRefs.current.get("work");
-    if (workTab) observer.observe(workTab);
-    const activeTab = activePanel ? tabRefs.current.get(activePanel) : null;
-    if (activeTab && activeTab !== workTab) observer.observe(activeTab);
-
-    return () => {
-      clearTimeout(resizeTimerRef.current);
-      window.removeEventListener("resize", update);
-      observer.disconnect();
-    };
-  }, [activePanel, activeWorkSub, tabRefs, trackRef]);
+    return () => window.removeEventListener("resize", update);
+  }, [activePanel, tabRefs, trackRef]);
 
   return style;
 }
