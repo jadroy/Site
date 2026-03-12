@@ -93,7 +93,7 @@ export function useScrollPhysics(
       if (e.button !== 0) return;
       if (e.shiftKey) return;
       const target = e.target as HTMLElement;
-      if (target.closest('a, button, input, select, textarea, label, .scroll-slider-handle, .scroll-slider-track, [role="button"], .control-panel, .panel-lever')) return;
+      if (target.closest('a, button, input, select, textarea, label, .scroll-slider-handle, .scroll-slider-track, [role="button"], .control-panel, .panel-lever, .tab-bar')) return;
 
       cancelMomentum();
       isPointerDown = true;

@@ -16,6 +16,7 @@ import { usePanelTilt } from "./hooks/usePanelTilt";
 import { usePanelNavigation } from "./hooks/usePanelNavigation";
 import { useCrosshair } from "./hooks/useCrosshair";
 import { useKeyTracker } from "./hooks/useKeyTracker";
+import SocialsTuner from "./components/SocialsTuner";
 
 export default function Home() {
   /* ── Boot gate ── */
@@ -680,6 +681,7 @@ export default function Home() {
         </div>
       )}
     </div>
+    <SocialsTuner />
     </>
   );
 }
