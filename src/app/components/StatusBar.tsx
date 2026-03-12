@@ -166,7 +166,7 @@ export default function StatusBar({ currentSection }: { currentSection: string }
             </>
           )
         ) : (
-          <span className="status-text status-text-dim">v0.2</span>
+          <span className="status-text status-text-dim">v1.2</span>
         )}
       </div>
     </div>
