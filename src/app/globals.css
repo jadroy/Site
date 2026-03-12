@@ -986,21 +986,15 @@ main.info-panel:hover > .panel-title,
   border-radius: 12px;
   padding: 4px;
   overflow: hidden;
-  box-shadow: none;
   position: relative;
   /* Stacked fan rotation */
   transform: rotate(calc((var(--stack-idx, 0) - 1.5) * 1.5deg));
-  transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .featured-container:hover {
   transform: rotate(calc((var(--stack-idx, 0) - 1.5) * 1.5deg)) translateY(-4px);
   cursor: pointer;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.02),
-    0 1px 3px rgba(0, 0, 0, 0.03),
-    0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 .featured-container:active {
@@ -1027,7 +1021,7 @@ main.info-panel:hover > .panel-title,
 .featured-container img {
   width: 100%;
   height: auto;
-  max-height: 70vh;
+  max-height: 80vh;
   object-fit: contain;
   display: block;
   pointer-events: none;
@@ -4135,10 +4129,14 @@ a.company:hover {
 
 /* Mobile */
 @media (max-width: 767px) {
-  .tab-bar { bottom: 22px; }
+  .tab-bar {
+    bottom: 22px;
+  }
   .tab-bar__tab { padding: 5px 12px; font-size: 10px; }
   .tab-bar__hint { display: none; }
   .tab-bar__dots { display: none; }
+  .tab-bar__dragzone { display: none; }
+  .tab-bar__handle { display: none; }
 }
 
 
@@ -4315,18 +4313,24 @@ a.company:hover {
     height: auto;
     min-height: 60svh;
     padding: 48px var(--grid-margin);
+    margin-right: 0;
+    align-items: flex-start;
   }
 
   .closing-socials a {
-    font-size: clamp(48px, 13vw, 80px);
+    font-size: clamp(40px, 12vw, 72px);
     letter-spacing: -0.06em;
     white-space: nowrap;
+    padding-left: 0;
+    opacity: 0.4 !important;
   }
 
-  .closing-socials a .external-arrow {
-    opacity: 0.5;
-    transform: translate(0, 0);
-    margin-left: 4px;
+  .closing-socials a:active {
+    opacity: 0.8 !important;
+  }
+
+  .closing-socials-caret {
+    display: none;
   }
 
   main.info-panel {
@@ -4403,12 +4407,6 @@ a.company:hover {
     padding: 36px 24px 48px;
     border-radius: 16px 16px 0 0;
     overflow: visible;
-  }
-
-  .info-section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
   }
 
   .doc-tabs {

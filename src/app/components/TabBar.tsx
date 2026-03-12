@@ -80,17 +80,18 @@ export default function TabBar({
   } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Initialize from storage
+  // Initialize from storage (desktop only)
   useEffect(() => {
+    if (isMobile) return;
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const pct = parseFloat(saved);
       if (!isNaN(pct)) applyPct(pct);
     }
-  }, [applyPct]);
+  }, [applyPct, isMobile]);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
-    if (e.button !== 0) return;
+    if (isMobile || e.button !== 0) return;
     const bar = barRef.current;
     if (!bar) return;
     bar.setPointerCapture(e.pointerId);
@@ -103,7 +104,7 @@ export default function TabBar({
       startPct: currentPct,
       moved: false,
     };
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => {
     const THRESHOLD = 8;
@@ -188,7 +189,7 @@ export default function TabBar({
               className={`tab-bar__tab${activePanel === id ? " tab-bar__tab--active" : ""}`}
               onClick={() => onTabClick(id)}
             >
-              {id === "work" && workSubCount > 0 ? (
+              {id === "work" && workSubCount > 0 && !isMobile ? (
                 <span className={`tab-bar__dots tab-bar__dots--always`}>
                   {Array.from({ length: workSubCount }, (_, i) => (
                     <span

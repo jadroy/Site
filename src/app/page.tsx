@@ -611,7 +611,7 @@ export default function Home() {
       ].map((project, i) => (
         <div key={i} ref={i === 0 ? workPanelRef : undefined} className={`featured-panel${i === 0 ? ' work-panel' : ''}${revealed ? ' revealed' : ''}`} style={{ '--stack-idx': i } as React.CSSProperties}>
           <div className="panel-title">Case Studies</div>
-          <div className="featured-container" onClick={() => { if (activePanel !== 'work') { scrollToWorkSub(i); playTick(); } }}>
+          <div className="featured-container" onClick={() => { scrollToWorkSub(i); playTick(); }}>
               {project.video ? (
                 <video
                   ref={(el) => { if (el) el.playbackRate = (project as any).speed ?? 1.8; }}
