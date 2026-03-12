@@ -2,15 +2,16 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 
-export type PanelId = "home" | "work" | "info" | "writing";
+export type PanelId = "welcome" | "info" | "work" | "socials";
 
-export const PANELS: PanelId[] = ["home", "info", "work"];
+export const PANELS: PanelId[] = ["info", "work", "socials"];
+export const TAB_PANELS: PanelId[] = ["info", "work"];
 
 const LABELS: Record<PanelId, string> = {
-  home: "Home",
-  work: "Work",
+  welcome: "Welcome",
   info: "Info",
-  writing: "Writing",
+  work: "Work",
+  socials: "Socials",
 };
 
 const STORAGE_KEY = "rj-tabbar-x";
@@ -41,10 +42,9 @@ export default function TabBar({
     else tabRefs.current.delete(id);
   }, []);
 
-  const indicatorStyle = useIndicatorStyle(activePanel, tabRefs, trackRef);
+  const indicatorStyle = useIndicatorStyle(activePanel, activeWorkSub, tabRefs, trackRef);
 
   const isWorkActive = activePanel === "work";
-  const digitOffset = activeWorkSub !== null ? activeWorkSub : 0;
 
   // Drag to reposition horizontally
   const dragRef = useRef<{
@@ -155,7 +155,7 @@ export default function TabBar({
       onPointerDown={onPointerDown}
     >
       <div className="tab-bar__track" ref={trackRef}>
-        {PANELS.map((id) => (
+        {TAB_PANELS.map((id) => (
           <button
             key={id}
             ref={setTabRef(id)}
@@ -164,21 +164,20 @@ export default function TabBar({
             className={`tab-bar__tab${activePanel === id ? " tab-bar__tab--active" : ""}`}
             onClick={() => onTabClick(id)}
           >
-            <span className="tab-bar__label">{LABELS[id]}</span>
-            {id === "work" && workSubCount > 0 && (
-              <span className={`tab-bar__slot${isWorkActive ? " tab-bar__slot--open" : ""}`}>
-                <span
-                  className="tab-bar__slot-reel"
-                  style={{ transform: `translateX(${-digitOffset * 8}px)` }}
-                >
-                  {Array.from({ length: workSubCount }, (_, i) => (
-                    <span key={i} className="tab-bar__slot-digit">{i + 1}</span>
-                  ))}
-                </span>
+            {id === "work" && workSubCount > 0 ? (
+              <span className={`tab-bar__dots tab-bar__dots--always`}>
+                {Array.from({ length: workSubCount }, (_, i) => (
+                  <span
+                    key={i}
+                    className={`tab-bar__dot${activeWorkSub === i ? " tab-bar__dot--active" : ""}`}
+                  />
+                ))}
               </span>
+            ) : (
+              <span className="tab-bar__label">{LABELS[id]}</span>
             )}
             {!isMobile && (
-              <span className="tab-bar__hint">{PANELS.indexOf(id) + 1}</span>
+              <span className="tab-bar__hint">{TAB_PANELS.indexOf(id) + 1}</span>
             )}
           </button>
         ))}
@@ -191,12 +190,12 @@ export default function TabBar({
 /** Custom hook: compute indicator left + width + height from active tab element */
 function useIndicatorStyle(
   activePanel: PanelId | null,
+  activeWorkSub: number | null,
   tabRefs: React.MutableRefObject<Map<PanelId, HTMLButtonElement>>,
   trackRef: React.RefObject<HTMLDivElement | null>,
 ): React.CSSProperties {
   const [style, setStyle] = useState<React.CSSProperties>({});
-  const lastPanelRef = useRef<PanelId | null>(null);
-  const resizeTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const resizeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     const update = () => {
@@ -205,13 +204,18 @@ function useIndicatorStyle(
         setStyle((prev) => ({ ...prev, opacity: 0 }));
         return;
       }
-      lastPanelRef.current = activePanel;
       const tab = tabRefs.current.get(activePanel);
       if (!tab) return;
       const trackRect = track.getBoundingClientRect();
-      const tabRect = tab.getBoundingClientRect();
 
-      // Measure from label (+ slot if visible) so indicator hugs content
+      // When work is active, hide indicator — dots take over
+      if (activePanel === "work") {
+        setStyle((prev) => ({ ...prev, opacity: 0 }));
+        return;
+      }
+
+      // Default: indicator hugs the tab label
+      const tabRect = tab.getBoundingClientRect();
       const label = tab.querySelector(".tab-bar__label") as HTMLElement | null;
       const labelRect = label?.getBoundingClientRect();
       const left = tabRect.left - trackRect.left;
@@ -246,7 +250,7 @@ function useIndicatorStyle(
       window.removeEventListener("resize", update);
       observer.disconnect();
     };
-  }, [activePanel, tabRefs, trackRef]);
+  }, [activePanel, activeWorkSub, tabRefs, trackRef]);
 
   return style;
 }

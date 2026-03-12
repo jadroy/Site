@@ -36,6 +36,13 @@ export function usePanelReveal(
     };
     let revealedLocal = false;
 
+    // Swoop-in: info panel slides in from the right
+    const SWOOP_DELAY = 1282;
+    const SWOOP_DURATION = 750;
+    const SWOOP_TARGET = -window.innerWidth * 0.1; // pull into viewport
+    const swoopStart = performance.now();
+    const swoopEase = (t: number) => 1 - Math.pow(1 - t, 2.5);
+
     const SPRING_STIFFNESS = 0.15;
     const SPRING_DAMPING = 0.75;
     const MAX_COMPRESSION = 0.04;
@@ -92,9 +99,23 @@ export function usePanelReveal(
         const scaleY = 1 - spring.value;
 
         const rotate = panel === infoEl ? (1 - smoothed) * -2.5 : 0;
+
+        // Swoop-in offset for info panel
+        let swoopX = 0;
+        let swoopRotate = 0;
+        if (panel === infoEl) {
+          const elapsed = performance.now() - swoopStart;
+          if (elapsed >= SWOOP_DELAY) {
+            const t = Math.min((elapsed - SWOOP_DELAY) / SWOOP_DURATION, 1);
+            swoopX = SWOOP_TARGET * swoopEase(t);
+            swoopRotate = -1.5 * (1 - swoopEase(t));
+          }
+        }
+
+        const totalRotate = rotate + swoopRotate;
         panel.style.transformOrigin = panel === infoEl ? 'center bottom' : '';
-        panel.style.transform = rotate
-          ? `translateY(${ty}px) rotate(${rotate}deg) scaleY(${scaleY})`
+        panel.style.transform = totalRotate || swoopX
+          ? `translateX(${swoopX}px) translateY(${ty}px) rotate(${totalRotate}deg) scaleY(${scaleY})`
           : `translateY(${ty}px) scaleY(${scaleY})`;
         panel.style.opacity = '1';
 
@@ -117,22 +138,10 @@ export function usePanelReveal(
     };
   }, [isMobile, booted]);
 
-  // Mobile fallback: IntersectionObserver
+  // Mobile fallback: reveal immediately (homePanelRef is display:none)
   useEffect(() => {
     if (!isMobile || !booted) return;
-    const el = homePanelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setRevealed(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
+    setRevealed(true);
   }, [isMobile, booted]);
 
   // Closing panel reveal

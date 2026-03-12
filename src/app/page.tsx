@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect, ReactNode } from "react";
-import Link from "next/link";
 import StatusBar from "./components/StatusBar";
 import TabBar, { type PanelId, PANELS } from "./components/TabBar";
 import SandDunes from "./components/SandDunes";
@@ -118,6 +117,8 @@ export default function Home() {
   const [sectionSpacing, setSectionSpacing] = useState(40);
   const ditherStyles = ['barcode', 'dotmatrix', 'halftone', 'zigzag'] as const;
   const [ditherStyle, setDitherStyle] = useState<typeof ditherStyles[number]>('barcode');
+  const [welcomeWidth, setWelcomeWidth] = useState(100);
+  const [infoPadTop, setInfoPadTop] = useState(22);
 
   /* ── Home panel effects ── */
   const [showTV, setShowTV] = useState(false);
@@ -130,6 +131,7 @@ export default function Home() {
   const applyMemoryPreset = (p: Partial<MemoryFx>) =>
     setMemoryFx({ ...defaultFx, ...p });
   const [showGrid, setShowGrid] = useState(false);
+
 
   /* ── Controls visibility ── */
   const [showControls, setShowControls] = useState(false);
@@ -262,7 +264,7 @@ export default function Home() {
       className={`horizontal-scroll-container${showcaseActive ? ' showcase-active' : ''}${activePanel === 'work' || activePanel === null ? ' work-expanded' : ''}`}
       ref={containerRef}
     >
-      <StatusBar currentSection={activePanel ?? 'home'} />
+      <StatusBar currentSection={activePanel ?? 'welcome'} />
       <TabBar
         activePanel={activePanel}
         onSelect={(panel) => { scrollToPanel(panel); playTick(); }}
@@ -287,9 +289,8 @@ export default function Home() {
       <div className="noise-overlay" />
 
       {/* Welcome — entrance */}
-      <div className="welcome-panel" onClick={() => scrollToPanel('home')}>
+      <div className="welcome-panel" onClick={() => scrollToPanel('info')} style={{ width: `${welcomeWidth}vw`, minWidth: `${welcomeWidth}vw` }}>
         <span className="welcome-name">Roy Jad</span>
-        {!isMobile && <span className={`welcome-scroll-cue${revealed ? ' hide' : ''}`}>&rarr;</span>}
       </div>
 
       {/* 12-Column Grid Overlay (debug) */}
@@ -369,6 +370,30 @@ export default function Home() {
             onChange={(e) => setSectionSpacing(parseInt(e.target.value))}
           />
           <span className="control-panel-value">{sectionSpacing}px</span>
+        </div>
+        <div className="control-panel-slider">
+          <span className="control-panel-label">Welcome</span>
+          <input
+            type="range"
+            min="40"
+            max="95"
+            step="1"
+            value={welcomeWidth}
+            onChange={(e) => setWelcomeWidth(parseInt(e.target.value))}
+          />
+          <span className="control-panel-value">{welcomeWidth}vw</span>
+        </div>
+        <div className="control-panel-slider">
+          <span className="control-panel-label">Card Y</span>
+          <input
+            type="range"
+            min="0"
+            max="50"
+            step="1"
+            value={infoPadTop}
+            onChange={(e) => setInfoPadTop(parseInt(e.target.value))}
+          />
+          <span className="control-panel-value">{infoPadTop}vh</span>
         </div>
         <div className="control-panel-row">
           <span className="control-panel-label">Header</span>
@@ -529,6 +554,7 @@ export default function Home() {
           '--gap-multiplier': gapSize,
           '--tree-branch-size': `${treeBranchSize}px`,
           '--section-spacing': `${sectionSpacing}px`,
+          paddingTop: `${infoPadTop}vh`,
         } as React.CSSProperties}
       >
         <div className="panel-title">Info</div>
@@ -577,15 +603,14 @@ export default function Home() {
 
       {/* Project panels */}
       {[
-        { title: "Humanoid Index", sub: "A catalog of humanoid robots", href: "https://humanoids-index.com", caseStudy: "/case-studies/humanoid-index", src: "/Humanoid Index/Humanoid Index walkthrough.mp4", video: true },
+        { title: "Humanoid Index", sub: "A catalog of humanoid robots", href: "https://humanoids-index.com", src: "/Humanoid Index/Humanoid Index walkthrough.mp4", video: true },
         { title: "Context", sub: "Founding Designer", href: "https://context.ai", src: "/Context/Context landing page walk through.mp4", video: true },
         { title: "Share", sub: "Phone-native work sharing", src: "/Share/new-share-video.mp4", video: true, speed: 1 },
         // { title: "IRL Projects", sub: "ESP32 E-Ink Weather Display", src: "", textOnly: true },
       ].map((project, i) => (
         <div key={i} ref={i === 0 ? workPanelRef : undefined} className={`featured-panel${i === 0 ? ' work-panel' : ''}${revealed ? ' revealed' : ''}`} style={{ '--stack-idx': i } as React.CSSProperties}>
           <div className="panel-title">Case Studies</div>
-          {project.caseStudy ? (
-            <Link href={project.caseStudy} className="featured-container">
+          <div className="featured-container">
               {project.video ? (
                 <video
                   ref={(el) => { if (el) el.playbackRate = (project as any).speed ?? 1.8; }}
@@ -596,45 +621,8 @@ export default function Home() {
                   playsInline
                   preload="metadata"
                 />
-              ) : project.textOnly ? (
-                <div className="featured-placeholder" />
               ) : (
-                <img src={project.src} alt={project.title} className={(project as any).contain ? 'featured-contain' : undefined} />
-              )}
-              <div className="featured-info">
-                <div className="featured-meta">
-                  <span className="featured-title">{project.title}</span>
-                  <span className="featured-sub">{project.sub}</span>
-                </div>
-                <div className="featured-link-group">
-                  {project.href && (
-                    <a href={project.href} target="_blank" rel="noopener noreferrer" className="featured-link" onClick={(e) => e.stopPropagation()}>
-                      Visit
-                      <svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg>
-                    </a>
-                  )}
-                  <span className="featured-link">
-                    Case Study
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ) : (
-            <div className="featured-container">
-              {project.video ? (
-                <video
-                  ref={(el) => { if (el) el.playbackRate = (project as any).speed ?? 1.8; }}
-                  src={project.src}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="metadata"
-                />
-              ) : project.textOnly ? (
-                <div className="featured-placeholder" />
-              ) : (
-                <img src={project.src} alt={project.title} className={(project as any).contain ? 'featured-contain' : undefined} />
+                <img src={project.src} alt={project.title} />
               )}
               <div className="featured-info">
                 <div className="featured-meta">
@@ -649,27 +637,15 @@ export default function Home() {
                 )}
               </div>
             </div>
-          )}
         </div>
       ))}
 
-      {/* Outro — mirrored receipt panel (hidden for now) */}
-      {/* <aside className="outro-panel" ref={outroPanelRef}>
-        <div className="panel-title">Outro</div>
-        <div className="outro-container">
-          <div className="outro-grid">
-            <div className="outro-line" style={{ '--print-idx': 0 } as React.CSSProperties}>Thanks for stopping by</div>
-            <div className="outro-line outro-sub" style={{ '--print-idx': 1 } as React.CSSProperties}>Say hello anytime</div>
-          </div>
-        </div>
-      </aside> */}
-
-      {/* Closing — bookend */}
+{/* Closing — bookend */}
       <div className="closing-panel" ref={closingPanelRef} onClick={() => scrollToPanel('info')}>
         <div className="closing-socials" onClick={(e) => e.stopPropagation()}>
           <a href="mailto:jadroy77@gmail.com">Email</a>
-          <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer">Twitter<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a>
-          <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer">LinkedIn<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a>
+          <a href="https://x.com/jadroy2" target="_blank" rel="noopener noreferrer">Twitter<svg className="external-arrow" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a>
+          <a href="https://www.linkedin.com/in/royjad/" target="_blank" rel="noopener noreferrer">LinkedIn<svg className="external-arrow" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></a>
         </div>
       </div>
 
@@ -688,7 +664,7 @@ export default function Home() {
 
       {/* Scroll hint */}
       {!isMobile && showScrollHint && (
-        <div className="scroll-hint" onClick={() => scrollToPanel('home')}>
+        <div className="scroll-hint" onClick={() => scrollToPanel('info')}>
           <span className="scroll-hint-arrow">&larr;</span>
           <span className="scroll-hint-text">SCROLL</span>
         </div>

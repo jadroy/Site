@@ -1,10 +1,11 @@
 "use client";
 
-const caseStudies = [
+const caseStudies: { title: string; subtitle: string; link: string; external?: boolean; image?: string }[] = [
   {
     title: "Humanoids",
     subtitle: "Product Design",
-    link: "/case-studies/humanoids",
+    link: "https://humanoids-index.com",
+    external: true,
     image: "/Humanoids (1).png",
   },
   {
@@ -20,7 +21,7 @@ export default function CaseStudiesSection() {
       <h2 className="section-title">Case Studies</h2>
       <div className="case-studies-grid">
         {caseStudies.map((study, index) => (
-          <a key={index} href={study.link} className="case-study-card">
+          <a key={index} href={study.link} className="case-study-card" {...(study.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
             <div className="case-study-image">
               {study.image && (
                 // eslint-disable-next-line @next/next/no-img-element

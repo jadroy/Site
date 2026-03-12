@@ -156,7 +156,7 @@ export default function StatusBar({ currentSection }: { currentSection: string }
   return (
     <div className={`status-bar ${isScrolling ? "status-bar-hidden" : ""}`}>
       <div className="status-bar-group">
-        {currentSection === 'home' ? (
+        {currentSection === 'welcome' ? (
           daylight && (
             <>
               <DaylightArc progress={daylight.progress} isNight={daylight.isNight} />
