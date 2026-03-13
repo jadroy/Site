@@ -104,27 +104,6 @@ export default function Home() {
     return () => window.removeEventListener('keydown', onKey);
   }, [docExpanded]);
 
-  /* ── Scroll-driven work panel expansion ── */
-  useEffect(() => {
-    if (isMobile || !booted) return;
-    const onScroll = () => {
-      const panel = workPanelRef.current;
-      const container = containerRef.current;
-      if (!panel || !container) return;
-      const scrollLeft = document.documentElement.scrollLeft;
-      const vw = window.innerWidth;
-      const panelLeft = panel.offsetLeft;
-      // Start expanding when panel is ~1.5 viewports away, fully expanded when ~0.3 away
-      const start = panelLeft - vw * 1.5;
-      const end = panelLeft - vw * 0.3;
-      const progress = Math.min(1, Math.max(0, (scrollLeft - start) / (end - start)));
-      container.style.setProperty('--expand-progress', String(progress));
-    };
-    document.addEventListener('scroll', onScroll, { passive: true });
-    onScroll(); // set initial value
-    return () => document.removeEventListener('scroll', onScroll);
-  }, [isMobile, booted]);
-
   /* ── Window-bar state ── */
   const [statementWeight, setStatementWeight] = useState<'light' | 'regular' | 'medium'>('regular');
   const [convictionsCollapsed, setConvictionsCollapsed] = useState(false);
@@ -294,7 +273,7 @@ export default function Home() {
     {/* Home — hidden for now, ref kept for hooks */}
     <div ref={homePanelRef} className="home-panel" style={{ display: 'none' }} />
     <div
-      className={`horizontal-scroll-container${showcaseActive ? ' showcase-active' : ''}`}
+      className={`horizontal-scroll-container${showcaseActive ? ' showcase-active' : ''}${activePanel === 'work' || activePanel === 'socials' ? ' work-expanded' : ''}`}
       ref={containerRef}
     >
       <StatusBar currentSection={activePanel ?? 'welcome'} />
@@ -650,7 +629,6 @@ export default function Home() {
         // { title: "IRL Projects", sub: "ESP32 E-Ink Weather Display", src: "", textOnly: true },
       ].map((project, i) => (
         <div key={i} ref={i === 0 ? workPanelRef : undefined} className={`featured-panel${i === 0 ? ' work-panel' : ''}${revealed ? ' revealed' : ''}`} style={{ '--stack-idx': i } as React.CSSProperties}>
-          <div className="panel-title">Work</div>
           <div className="featured-container" onClick={() => { scrollToWorkSub(i); playTick(); }}>
               {project.video ? (
                 <video
@@ -666,19 +644,19 @@ export default function Home() {
               ) : (
                 <img src={project.src} alt={project.title} />
               )}
-              <div className="featured-info">
-                <div className="featured-meta">
-                  <span className="featured-title">{project.title}</span>
-                  <span className="featured-sub">{project.sub}</span>
-                </div>
-                {project.href && (
-                  <a href={project.href} target="_blank" rel="noopener noreferrer" className="featured-link">
-                    Visit
-                    <svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg>
-                  </a>
-                )}
-              </div>
             </div>
+          <div className="featured-info-below">
+            <div className="featured-meta">
+              <span className="featured-title">{project.title}</span>
+              <span className="featured-sub">{project.sub}</span>
+            </div>
+            {project.href && (
+              <a href={project.href} target="_blank" rel="noopener noreferrer" className="featured-link" onClick={(e) => e.stopPropagation()}>
+                Visit
+                <svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg>
+              </a>
+            )}
+          </div>
         </div>
       ))}
 

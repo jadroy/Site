@@ -90,6 +90,8 @@ export default function TabBar({
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if (isMobile || e.button !== 0) return;
+    // Don't capture pointer when clicking a tab button — let click fire normally
+    if ((e.target as HTMLElement).closest(".tab-bar__tab")) return;
     const bar = barRef.current;
     if (!bar) return;
     bar.setPointerCapture(e.pointerId);
@@ -216,7 +218,10 @@ function useIndicatorStyle(
         return;
       }
       const tab = tabRefs.current.get(activePanel);
-      if (!tab) return;
+      if (!tab) {
+        setStyle((prev) => ({ ...prev, opacity: 0 }));
+        return;
+      }
       const trackRect = track.getBoundingClientRect();
       const tabRect = tab.getBoundingClientRect();
 

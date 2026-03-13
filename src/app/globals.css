@@ -553,11 +553,20 @@ main.info-panel.revealed {
 
 /* When JS scroll-physics is active, disable CSS transitions on panels (JS drives transforms) */
 .scroll-driven .home-panel,
-.scroll-driven .featured-panel,
 .scroll-driven .work-panel,
 .scroll-driven main.info-panel,
 .scroll-driven .writing-panel {
   transition: none;
+}
+/* Featured panels keep margin-left + transform transitions for the stacked→expand animation */
+.scroll-driven .featured-panel {
+  transition: margin-left 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--stack-idx, 0) * 100ms);
+}
+.scroll-driven .featured-container {
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--stack-idx, 0) * 100ms);
 }
 
 /* =============================================
@@ -935,6 +944,19 @@ main.info-panel:hover > .panel-title,
   transform: translateY(0);
 }
 
+.featured-info-below {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px 0;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.featured-panel:hover .featured-info-below {
+  opacity: 1;
+}
+
 /* =============================================
    FEATURED PANEL — standalone project spotlight
    ============================================= */
@@ -955,12 +977,11 @@ main.info-panel:hover > .panel-title,
   will-change: transform, margin-left;
 }
 
-/* Extra breathing room between info and work group */
+/* Stacked state — first work panel tucks behind info */
 .featured-panel.work-panel {
   margin-left: 120px;
 }
-
-/* Stacked state — panels overlap with z-stacking */
+/* Subsequent panels fully overlap when stacked */
 .featured-panel + .featured-panel {
   margin-left: -820px;
 }
@@ -968,7 +989,10 @@ main.info-panel:hover > .panel-title,
   z-index: calc(4 - var(--stack-idx, 0));
 }
 
-/* Expanded state — normal spacing, straighten out */
+/* Expanded state — cards fan out */
+.work-expanded .featured-panel.work-panel {
+  margin-left: 120px;
+}
 .work-expanded .featured-panel + .featured-panel {
   margin-left: 0;
 }
@@ -991,29 +1015,34 @@ main.info-panel:hover > .panel-title,
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
     inset 0 -1px 0 rgba(0, 0, 0, 0.02);
   /* Stacked fan rotation */
-  transform: rotate(calc((var(--stack-idx, 0) - 1.5) * 1.5deg));
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  --_rotation: calc((var(--stack-idx, 0) - 1.5) * 1.5deg);
+  transform: rotate(var(--_rotation));
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+}
+
+/* When expanded, flatten rotation */
+.work-expanded .featured-container {
+  --_rotation: 0deg;
 }
 
 .featured-container:hover {
-  transform: rotate(calc((var(--stack-idx, 0) - 1.5) * 1.5deg)) translateY(-4px);
+  transform: rotate(var(--_rotation)) translateY(-4px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.02),
+    0 3px 8px rgba(0, 0, 0, 0.03);
   cursor: pointer;
 }
 
 .featured-container:active {
-  transform: rotate(calc((var(--stack-idx, 0) - 1.5) * 1.5deg)) translateY(-6px);
+  transform: rotate(var(--_rotation)) translateY(-6px);
   transition: transform 0.1s ease-out;
 }
 
-/* Expanded — straighten containers */
-.work-expanded .featured-container {
-  transform: rotate(0deg);
-}
-
+/* Expanded hover/active — no rotation interference */
 .work-expanded .featured-container:hover {
   transform: translateY(-4px);
 }
-
 .work-expanded .featured-container:active {
   transform: translateY(-6px);
   transition: transform 0.1s ease-out;
@@ -1135,6 +1164,12 @@ a.featured-container {
     0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
+[data-theme="dark"] .featured-container:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+    0 3px 8px rgba(0, 0, 0, 0.1);
+}
 
 /* .work-panel class kept as scroll-target anchor only — styled by .featured-panel */
 
