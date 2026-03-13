@@ -957,7 +957,7 @@ main.info-panel:hover > .panel-title,
 
 .featured-panel:hover .featured-info-below {
   opacity: 1;
-  transform: translateY(-24px) rotate(1.5deg);
+  transform: translateY(-24px) rotate(0.8deg);
 }
 
 /* =============================================
@@ -1030,11 +1030,11 @@ main.info-panel:hover > .panel-title,
 }
 
 .featured-container:hover {
-  transform: rotate(calc(var(--_rotation) + 1.5deg)) translateY(-32px);
+  transform: rotate(calc(var(--_rotation) + 0.8deg)) translateY(-32px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
     inset 0 -1px 0 rgba(0, 0, 0, 0.02),
-    0 3px 8px rgba(0, 0, 0, 0.03);
+    0 4px 12px rgba(0, 0, 0, 0.04);
   cursor: pointer;
 }
 
@@ -1045,7 +1045,7 @@ main.info-panel:hover > .panel-title,
 
 /* Expanded hover/active — no rotation interference */
 .work-expanded .featured-container:hover {
-  transform: translateY(-32px) rotate(1.5deg);
+  transform: translateY(-32px) rotate(0.8deg);
 }
 .work-expanded .featured-container:active {
   transform: translateY(-10px);
