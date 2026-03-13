@@ -3,19 +3,19 @@
 import React, { useEffect, useRef, useState } from "react";
 
 const humanoidImages = [
-  { src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/humanoid-clip.mp4", alt: "Humanoid Index – Demo walkthrough", type: "video" },
+  { src: "https://cdn.royjad.com/videos/humanoid-clip.mp4", alt: "Humanoid Index – Demo walkthrough", type: "video" },
   { src: "/Humanoid Index/CleanShot 2026-02-06 at 14.40.46@2x.png", alt: "Humanoid Index – Carousel view showing Neo by 1X Technologies", type: "image" },
   { src: "/Humanoid Index/CleanShot 2026-02-06 at 14.41.36@2x.png", alt: "Humanoid Index – Robot detail page", type: "image" },
   { src: "/Humanoid Index/CleanShot 2026-02-06 at 14.40.53@2x.png", alt: "Humanoid Index – Grid view of all humanoid robots", type: "image" },
 ];
 
 const contextImages = [
-  { src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/context-hero.mp4", alt: "Context Landing Hero Fade In", type: "video" },
-  { src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/context-walkthrough.mp4", alt: "Context Landing Page Walk Through", type: "video" },
+  { src: "https://cdn.royjad.com/videos/context-hero.mp4", alt: "Context Landing Hero Fade In", type: "video" },
+  { src: "https://cdn.royjad.com/videos/context-walkthrough.mp4", alt: "Context Landing Page Walk Through", type: "video" },
 ];
 
 const shareImages = [
-  { src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/share-animation.mov", alt: "Share Animation", type: "video", playbackRate: 1.25, scale: 1.3 },
+  { src: "https://cdn.royjad.com/videos/share-animation.mov", alt: "Share Animation", type: "video", playbackRate: 1.25, scale: 1.3 },
   { src: "/Share/Share Work NEW.png", alt: "Share Work – New", type: "image" },
   { src: "/Share/Share Work (2).png", alt: "Share Work 2", type: "image" },
   { src: "/Share/Share Work (9).png", alt: "Share Work 9", type: "image" },

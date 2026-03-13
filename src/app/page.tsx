@@ -623,39 +623,41 @@ export default function Home() {
 
       {/* Project panels */}
       {[
-        { title: "Humanoid Index", sub: "A catalog of humanoid robots", href: "https://humanoids-index.com", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/humanoid-walkthrough.mp4", poster: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/humanoid-poster.jpg", video: true },
-        { title: "Context", sub: "Founding Designer", href: "https://context.ai", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/context-walkthrough.mp4", poster: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/context-poster.jpg", video: true },
-        { title: "Share", sub: "Phone-native work sharing", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/share-video.mp4", poster: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/share-poster.jpg", video: true, speed: 1.3 },
+        { title: "Humanoid Index", sub: "A catalog of humanoid robots", href: "https://humanoids-index.com", src: "https://cdn.royjad.com/videos/humanoid-walkthrough.mp4", poster: "https://cdn.royjad.com/videos/humanoid-poster.jpg", video: true },
+        { title: "Context", sub: "Founding Designer", href: "https://context.ai", src: "https://cdn.royjad.com/videos/context-walkthrough.mp4", poster: "https://cdn.royjad.com/videos/context-poster.jpg", video: true },
+        { title: "Share", sub: "Phone-native work sharing", src: "https://cdn.royjad.com/videos/share-video.mp4", poster: "https://cdn.royjad.com/videos/share-poster.jpg", video: true, speed: 1.3 },
         // { title: "IRL Projects", sub: "ESP32 E-Ink Weather Display", src: "", textOnly: true },
       ].map((project, i) => (
         <div key={i} ref={i === 0 ? workPanelRef : undefined} className={`featured-panel${i === 0 ? ' work-panel' : ''}${revealed ? ' revealed' : ''}`} style={{ '--stack-idx': i } as React.CSSProperties}>
-          <div className="featured-container" onClick={() => { scrollToWorkSub(i); playTick(); }}>
-              {project.video ? (
-                <video
-                  ref={(el) => { if (el) el.playbackRate = (project as any).speed ?? 1.8; }}
-                  src={project.src}
-                  poster={(project as any).poster}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="auto"
-                />
-              ) : (
-                <img src={project.src} alt={project.title} />
+          <div className="featured-hover-zone">
+            <div className="featured-container" onClick={() => { scrollToWorkSub(i); playTick(); }}>
+                {project.video ? (
+                  <video
+                    ref={(el) => { if (el) el.playbackRate = (project as any).speed ?? 1.8; }}
+                    src={project.src}
+                    poster={(project as any).poster}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="auto"
+                  />
+                ) : (
+                  <img src={project.src} alt={project.title} />
+                )}
+              </div>
+            <div className="featured-info-below">
+              <div className="featured-meta">
+                <span className="featured-title">{project.title}</span>
+                <span className="featured-sub">{project.sub}</span>
+              </div>
+              {project.href && (
+                <a href={project.href} target="_blank" rel="noopener noreferrer" className="featured-link" onClick={(e) => e.stopPropagation()}>
+                  Visit
+                  <svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg>
+                </a>
               )}
             </div>
-          <div className="featured-info-below">
-            <div className="featured-meta">
-              <span className="featured-title">{project.title}</span>
-              <span className="featured-sub">{project.sub}</span>
-            </div>
-            {project.href && (
-              <a href={project.href} target="_blank" rel="noopener noreferrer" className="featured-link" onClick={(e) => e.stopPropagation()}>
-                Visit
-                <svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg>
-              </a>
-            )}
           </div>
         </div>
       ))}
