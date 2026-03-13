@@ -623,9 +623,9 @@ export default function Home() {
 
       {/* Project panels */}
       {[
-        { title: "Humanoid Index", sub: "A catalog of humanoid robots", href: "https://humanoids-index.com", src: "https://cdn.royjad.com/videos/humanoid-walkthrough.mp4", poster: "https://cdn.royjad.com/videos/humanoid-poster.jpg", video: true },
-        { title: "Context", sub: "Founding Designer", href: "https://context.ai", src: "https://cdn.royjad.com/videos/context-walkthrough.mp4", poster: "https://cdn.royjad.com/videos/context-poster.jpg", video: true },
-        { title: "Share", sub: "Phone-native work sharing", src: "https://cdn.royjad.com/videos/share-video.mp4", poster: "https://cdn.royjad.com/videos/share-poster.jpg", video: true, speed: 1.3 },
+        { title: "Humanoid Index", sub: "A catalog of humanoid robots", href: "https://humanoids-index.com", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/humanoid-walkthrough.mp4", poster: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/humanoid-poster.jpg", video: true },
+        { title: "Context", sub: "Founding Designer", href: "https://context.ai", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/context-walkthrough.mp4", poster: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/context-poster.jpg", video: true },
+        { title: "Share", sub: "Phone-native work sharing", src: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/share-video.mp4", poster: "https://pub-ff9c525507d54313857d813d5a8fe712.r2.dev/videos/share-poster.jpg", video: true, speed: 1.3 },
         // { title: "IRL Projects", sub: "ESP32 E-Ink Weather Display", src: "", textOnly: true },
       ].map((project, i) => (
         <div key={i} ref={i === 0 ? workPanelRef : undefined} className={`featured-panel${i === 0 ? ' work-panel' : ''}${revealed ? ' revealed' : ''}`} style={{ '--stack-idx': i } as React.CSSProperties}>
