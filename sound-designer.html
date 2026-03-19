@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sound Designer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, 'Helvetica Neue', sans-serif;
+    background: #f5f5f4;
+    color: #1a1a1a;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 24px 32px 20px;
+    border-bottom: 1px solid #e5e5e3;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* ── Buttons ── */
+  .btn {
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1px solid #d4d4d2;
+    background: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .btn:hover { background: #fafaf9; border-color: #c4c4c2; }
+  .btn:active { background: #f0f0ee; transform: scale(0.98); }
+  .btn-primary {
+    background: #1a1a1a;
+    color: #fff;
+    border-color: #1a1a1a;
+  }
+  .btn-primary:hover { background: #333; border-color: #333; }
+  .btn-primary:active { background: #444; }
+  .btn-icon {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+  }
+  .kbd {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    color: #999;
+    background: #f5f5f4;
+    border: 1px solid #e5e5e3;
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    vertical-align: 1px;
+  }
+
+  /* ── Presets ── */
+  .presets-bar {
+    padding: 16px 32px;
+    background: #fff;
+    border-bottom: 1px solid #e5e5e3;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .presets-bar .label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #999;
+    margin-right: 8px;
+  }
+  .preset-btn {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid #e5e5e3;
+    background: #fff;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .preset-btn:hover { border-color: #ccc; color: #333; background: #fafaf9; }
+  .preset-btn.active {
+    background: #1a1a1a;
+    color: #fff;
+    border-color: #1a1a1a;
+  }
+
+  /* ── Main grid ── */
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: #e5e5e3;
+    margin: 0;
+  }
+
+  /* ── Section ── */
+  .section {
+    background: #fff;
+    padding: 24px 28px 28px;
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #999;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #d4d4d2;
+  }
+
+  /* ── Slider rows ── */
+  .control {
+    display: grid;
+    grid-template-columns: 100px 1fr 44px;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .control:last-child { margin-bottom: 0; }
+  .control label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #666;
+  }
+  .control .val {
+    font-size: 12px;
+    font-weight: 500;
+    color: #999;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Range inputs ── */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: #e8e8e6;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1.5px solid #ccc;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover {
+    border-color: #999;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.15);
+  }
+  input[type="range"]:active::-webkit-slider-thumb {
+    border-color: #666;
+  }
+
+  /* ── Select ── */
+  select {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid #d4d4d2;
+    background: #fff;
+    color: #1a1a1a;
+    cursor: pointer;
+    outline: none;
+  }
+  select:hover { border-color: #bbb; }
+
+  /* ── Toggle ── */
+  .toggle {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #ddd;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: none;
+    outline: none;
+  }
+  .toggle:checked { background: #1a1a1a; }
+  .toggle::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  }
+  .toggle:checked::before { transform: translateX(16px); }
+
+  /* ── Play flash ── */
+  @keyframes playFlash {
+    0% { box-shadow: 0 0 0 0 rgba(26,26,26,0.15); }
+    100% { box-shadow: 0 0 0 8px rgba(26,26,26,0); }
+  }
+  .btn-primary.flash { animation: playFlash 0.3s ease-out; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sound Designer</h1>
+  <div class="header-actions">
+    <button class="btn" id="copyBtn">Copy Code</button>
+    <button class="btn btn-primary" id="playBtn">
+      Play<span class="kbd">Space</span>
+    </button>
+  </div>
+</header>
+
+<div class="presets-bar">
+  <span class="label">Presets</span>
+  <div id="presets" style="display:contents;"></div>
+</div>
+
+<div class="main">
+  <!-- Column 1: Rotation -->
+  <div class="section">
+    <div class="section-title"><span class="dot" style="background:#7c6f64;"></span>Rotation</div>
+
+    <div class="control">
+      <label>Speed Start</label>
+      <input type="range" id="lfoStart" min="5" max="80" value="50" step="1">
+      <span class="val" id="lfoStartV">50 Hz</span>
+    </div>
+    <div class="control">
+      <label>Speed End</label>
+      <input type="range" id="lfoEnd" min="1" max="20" value="6" step="0.5">
+      <span class="val" id="lfoEndV">6 Hz</span>
+    </div>
+    <div class="control">
+      <label>Shape</label>
+      <select id="lfoShape">
+        <option value="sine">Smooth</option>
+        <option value="square">Clicky</option>
+        <option value="sawtooth">Ratchet</option>
+        <option value="triangle">Soft</option>
+      </select>
+      <span class="val"></span>
+    </div>
+    <div class="control">
+      <label>Intensity</label>
+      <input type="range" id="lfoDepth" min="0.002" max="0.03" value="0.01" step="0.001">
+      <span class="val" id="lfoDepthV">0.010</span>
+    </div>
+    <div class="control">
+      <label>Volume</label>
+      <input type="range" id="spinGain" min="0.002" max="0.03" value="0.012" step="0.001">
+      <span class="val" id="spinGainV">0.012</span>
+    </div>
+  </div>
+
+  <!-- Column 2: Tone -->
+  <div class="section">
+    <div class="section-title"><span class="dot" style="background:#8b7355;"></span>Tone</div>
+
+    <div class="control">
+      <label>Bright Start</label>
+      <input type="range" id="bpStart" min="400" max="5000" value="1800" step="50">
+      <span class="val" id="bpStartV">1800</span>
+    </div>
+    <div class="control">
+      <label>Bright End</label>
+      <input type="range" id="bpEnd" min="100" max="2000" value="500" step="50">
+      <span class="val" id="bpEndV">500</span>
+    </div>
+    <div class="control">
+      <label>Resonance</label>
+      <input type="range" id="bpQ" min="0.3" max="6" value="1.8" step="0.1">
+      <span class="val" id="bpQV">1.8</span>
+    </div>
+    <div class="control">
+      <label>Duration</label>
+      <input type="range" id="dur" min="0.1" max="0.8" value="0.4" step="0.02">
+      <span class="val" id="durV">0.40s</span>
+    </div>
+  </div>
+
+  <!-- Column 3: Weight + Snap -->
+  <div class="section">
+    <div class="section-title"><span class="dot" style="background:#6b7c6f;"></span>Weight</div>
+
+    <div class="control">
+      <label>Low Start</label>
+      <input type="range" id="lpStart" min="80" max="800" value="350" step="10">
+      <span class="val" id="lpStartV">350</span>
+    </div>
+    <div class="control">
+      <label>Low End</label>
+      <input type="range" id="lpEnd" min="30" max="200" value="80" step="5">
+      <span class="val" id="lpEndV">80</span>
+    </div>
+    <div class="control">
+      <label>Rumble</label>
+      <input type="range" id="lpQ" min="0.1" max="3" value="0.5" step="0.1">
+      <span class="val" id="lpQV">0.5</span>
+    </div>
+    <div class="control">
+      <label>Volume</label>
+      <input type="range" id="lowGain" min="0.005" max="0.08" value="0.025" step="0.001">
+      <span class="val" id="lowGainV">0.025</span>
+    </div>
+    <div class="control">
+      <label>Decay</label>
+      <input type="range" id="lowDecay" min="0.1" max="1" value="0.6" step="0.05">
+      <span class="val" id="lowDecayV">0.60</span>
+    </div>
+
+    <div style="height:1px; background:#e8e8e6; margin:18px 0 16px;"></div>
+    <div class="section-title" style="margin-bottom:16px;"><span class="dot" style="background:#7c6b6f;"></span>Snap</div>
+
+    <div class="control">
+      <label>Enabled</label>
+      <input type="checkbox" id="transOn" class="toggle" checked>
+      <span class="val"></span>
+    </div>
+    <div class="control">
+      <label>Brightness</label>
+      <input type="range" id="transFreq" min="1000" max="6000" value="2500" step="100">
+      <span class="val" id="transFreqV">2500</span>
+    </div>
+    <div class="control">
+      <label>Volume</label>
+      <input type="range" id="transGain" min="0.002" max="0.04" value="0.012" step="0.001">
+      <span class="val" id="transGainV">0.012</span>
+    </div>
+    <div class="control">
+      <label>Length</label>
+      <input type="range" id="transDur" min="0.005" max="0.05" value="0.02" step="0.002">
+      <span class="val" id="transDurV">0.020</span>
+    </div>
+  </div>
+</div>
+
+<script>
+let audioCtx = null;
+function ctx() { if (!audioCtx) audioCtx = new AudioContext(); return audioCtx; }
+function mkNoise(dur) {
+  const c = ctx();
+  const buf = c.createBuffer(1, Math.floor(c.sampleRate * dur), c.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  return buf;
+}
+
+// Value display helpers
+const fmtMap = {
+  lfoStart: v => Math.round(v) + ' Hz',
+  lfoEnd: v => parseFloat(v).toFixed(1) + ' Hz',
+  dur: v => parseFloat(v).toFixed(2) + 's',
+  bpStart: v => Math.round(v),
+  bpEnd: v => Math.round(v),
+  bpQ: v => parseFloat(v).toFixed(1),
+  spinGain: v => parseFloat(v).toFixed(3),
+  lfoDepth: v => parseFloat(v).toFixed(3),
+  lpStart: v => Math.round(v),
+  lpEnd: v => Math.round(v),
+  lpQ: v => parseFloat(v).toFixed(1),
+  lowGain: v => parseFloat(v).toFixed(3),
+  lowDecay: v => parseFloat(v).toFixed(2),
+  transFreq: v => Math.round(v),
+  transGain: v => parseFloat(v).toFixed(3),
+  transDur: v => parseFloat(v).toFixed(3),
+};
+
+const sliderIds = Object.keys(fmtMap);
+sliderIds.forEach(id => {
+  const el = document.getElementById(id);
+  const v = document.getElementById(id + 'V');
+  if (!el || !v) return;
+  el.addEventListener('input', () => { v.textContent = fmtMap[id](el.value); });
+});
+
+function getParams() {
+  const g = id => parseFloat(document.getElementById(id).value);
+  return {
+    dur: g('dur'), lfoStart: g('lfoStart'), lfoEnd: g('lfoEnd'), lfoShape: document.getElementById('lfoShape').value,
+    lfoDepth: g('lfoDepth'), bpStart: g('bpStart'), bpEnd: g('bpEnd'), bpQ: g('bpQ'), spinGain: g('spinGain'),
+    lpStart: g('lpStart'), lpEnd: g('lpEnd'), lpQ: g('lpQ'), lowGain: g('lowGain'), lowDecay: g('lowDecay'),
+    transOn: document.getElementById('transOn').checked, transFreq: g('transFreq'), transGain: g('transGain'), transDur: g('transDur'),
+  };
+}
+
+function playSound() {
+  const p = getParams();
+  const c = ctx(); const t = c.currentTime;
+  const buf = mkNoise(p.dur);
+
+  const n = c.createBufferSource(); n.buffer = buf;
+  const bp = c.createBiquadFilter(); bp.type = 'bandpass';
+  bp.frequency.setValueAtTime(p.bpStart, t); bp.frequency.exponentialRampToValueAtTime(p.bpEnd, t + p.dur); bp.Q.value = p.bpQ;
+  const lfo = c.createOscillator(); lfo.type = p.lfoShape;
+  lfo.frequency.setValueAtTime(p.lfoStart, t); lfo.frequency.exponentialRampToValueAtTime(p.lfoEnd, t + p.dur);
+  const ld = c.createGain(); ld.gain.value = p.lfoDepth;
+  const car = c.createGain();
+  car.gain.setValueAtTime(p.spinGain, t); car.gain.linearRampToValueAtTime(p.spinGain * 1.1, t + 0.05);
+  car.gain.exponentialRampToValueAtTime(0.001, t + p.dur);
+  n.connect(bp); bp.connect(car); lfo.connect(ld); ld.connect(car.gain); car.connect(c.destination);
+  n.start(t); n.stop(t + p.dur); lfo.start(t); lfo.stop(t + p.dur);
+
+  const n2 = c.createBufferSource(); n2.buffer = buf;
+  const lp = c.createBiquadFilter(); lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(p.lpStart, t); lp.frequency.exponentialRampToValueAtTime(p.lpEnd, t + p.dur); lp.Q.value = p.lpQ;
+  const g2 = c.createGain();
+  g2.gain.setValueAtTime(p.lowGain, t); g2.gain.exponentialRampToValueAtTime(0.001, t + p.dur * p.lowDecay);
+  n2.connect(lp); lp.connect(g2); g2.connect(c.destination);
+  n2.start(t); n2.stop(t + p.dur);
+
+  if (p.transOn) {
+    const n3 = c.createBufferSource(); n3.buffer = buf;
+    const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = p.transFreq; hp.Q.value = 0.3;
+    const g3 = c.createGain();
+    g3.gain.setValueAtTime(p.transGain, t); g3.gain.exponentialRampToValueAtTime(0.001, t + p.transDur);
+    n3.connect(hp); hp.connect(g3); g3.connect(c.destination);
+    n3.start(t); n3.stop(t + p.transDur + 0.01);
+  }
+
+  // Flash the play button
+  const btn = document.getElementById('playBtn');
+  btn.classList.remove('flash');
+  void btn.offsetWidth;
+  btn.classList.add('flash');
+}
+
+document.getElementById('playBtn').addEventListener('click', playSound);
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); playSound(); }
+});
+
+// Presets
+const presets = {
+  'Ratchet': { dur:0.4, lfoStart:55, lfoEnd:5, lfoShape:'square', lfoDepth:0.012, bpStart:2200, bpEnd:800, bpQ:2.5, spinGain:0.012, lpStart:400, lpEnd:100, lpQ:0.6, lowGain:0.04, lowDecay:0.5, transOn:false, transFreq:2500, transGain:0.012, transDur:0.02 },
+  'Servo': { dur:0.45, lfoStart:60, lfoEnd:8, lfoShape:'sine', lfoDepth:0.005, bpStart:3000, bpEnd:400, bpQ:3.0, spinGain:0.012, lpStart:300, lpEnd:80, lpQ:0.4, lowGain:0.03, lowDecay:0.6, transOn:false, transFreq:2500, transGain:0.012, transDur:0.02 },
+  'Dial': { dur:0.35, lfoStart:40, lfoEnd:8, lfoShape:'sine', lfoDepth:0.015, bpStart:1500, bpEnd:900, bpQ:4.0, spinGain:0.015, lpStart:200, lpEnd:60, lpQ:0.5, lowGain:0.02, lowDecay:0.4, transOn:false, transFreq:2500, transGain:0.012, transDur:0.02 },
+  'Wind-up': { dur:0.5, lfoStart:10, lfoEnd:5, lfoShape:'sine', lfoDepth:0.01, bpStart:600, bpEnd:400, bpQ:2.0, spinGain:0.015, lpStart:250, lpEnd:80, lpQ:0.5, lowGain:0.02, lowDecay:0.4, transOn:false, transFreq:2500, transGain:0.012, transDur:0.02 },
+  'Shutter': { dur:0.2, lfoStart:70, lfoEnd:15, lfoShape:'sine', lfoDepth:0.008, bpStart:3500, bpEnd:1000, bpQ:1.5, spinGain:0.02, lpStart:400, lpEnd:100, lpQ:0.5, lowGain:0.04, lowDecay:0.3, transOn:true, transFreq:3000, transGain:0.015, transDur:0.015 },
+  'Thread': { dur:0.4, lfoStart:50, lfoEnd:6, lfoShape:'sine', lfoDepth:0.01, bpStart:1800, bpEnd:500, bpQ:1.8, spinGain:0.012, lpStart:350, lpEnd:80, lpQ:0.5, lowGain:0.025, lowDecay:0.6, transOn:true, transFreq:2500, transGain:0.012, transDur:0.02 },
+  'Vault': { dur:0.55, lfoStart:30, lfoEnd:4, lfoShape:'sine', lfoDepth:0.02, bpStart:800, bpEnd:200, bpQ:1.5, spinGain:0.015, lpStart:250, lpEnd:60, lpQ:0.8, lowGain:0.05, lowDecay:0.7, transOn:false, transFreq:2500, transGain:0.012, transDur:0.02 },
+  'Zip': { dur:0.3, lfoStart:80, lfoEnd:12, lfoShape:'sine', lfoDepth:0.005, bpStart:4000, bpEnd:300, bpQ:2.0, spinGain:0.015, lpStart:500, lpEnd:100, lpQ:0.5, lowGain:0.03, lowDecay:0.3, transOn:false, transFreq:2500, transGain:0.012, transDur:0.02 },
+  'Marble': { dur:0.5, lfoStart:35, lfoEnd:3, lfoShape:'sine', lfoDepth:0.006, bpStart:1200, bpEnd:300, bpQ:1.0, spinGain:0.008, lpStart:350, lpEnd:80, lpQ:0.5, lowGain:0.025, lowDecay:0.6, transOn:false, transFreq:2500, transGain:0.012, transDur:0.02 },
+  'Typewriter': { dur:0.25, lfoStart:60, lfoEnd:15, lfoShape:'square', lfoDepth:0.008, bpStart:2500, bpEnd:500, bpQ:1.2, spinGain:0.015, lpStart:350, lpEnd:100, lpQ:0.5, lowGain:0.035, lowDecay:0.3, transOn:true, transFreq:3500, transGain:0.01, transDur:0.01 },
+  'Film Reel': { dur:0.45, lfoStart:35, lfoEnd:4, lfoShape:'sawtooth', lfoDepth:0.012, bpStart:1600, bpEnd:700, bpQ:3.0, spinGain:0.012, lpStart:300, lpEnd:80, lpQ:0.5, lowGain:0.02, lowDecay:0.5, transOn:false, transFreq:2500, transGain:0.012, transDur:0.02 },
+  'Detent': { dur:0.3, lfoStart:45, lfoEnd:8, lfoShape:'sine', lfoDepth:0.008, bpStart:1400, bpEnd:350, bpQ:1.5, spinGain:0.012, lpStart:400, lpEnd:80, lpQ:0.7, lowGain:0.04, lowDecay:0.5, transOn:true, transFreq:2500, transGain:0.02, transDur:0.02 },
+};
+
+function loadPreset(name) {
+  const p = presets[name];
+  Object.entries(p).forEach(([k, v]) => {
+    const el = document.getElementById(k);
+    if (!el) return;
+    if (el.type === 'checkbox') { el.checked = v; return; }
+    if (el.tagName === 'SELECT') { el.value = v; return; }
+    el.value = v;
+    const vEl = document.getElementById(k + 'V');
+    if (vEl && fmtMap[k]) vEl.textContent = fmtMap[k](v);
+  });
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b.textContent === name));
+}
+
+const presetsEl = document.getElementById('presets');
+Object.keys(presets).forEach(name => {
+  const btn = document.createElement('button');
+  btn.className = 'preset-btn';
+  btn.textContent = name;
+  btn.addEventListener('click', () => { loadPreset(name); playSound(); });
+  presetsEl.appendChild(btn);
+});
+
+// Copy code
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const p = getParams();
+  const code = `export function playSpin() {
+  if (!audioCtx) audioCtx = new AudioContext();
+  const t = audioCtx.currentTime;
+  const dur = ${p.dur};
+  const bufferLen = Math.floor(audioCtx.sampleRate * dur);
+  const buffer = audioCtx.createBuffer(1, bufferLen, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferLen; i++) data[i] = Math.random() * 2 - 1;
+
+  // Spin layer
+  const n = audioCtx.createBufferSource(); n.buffer = buffer;
+  const bp = audioCtx.createBiquadFilter(); bp.type = 'bandpass';
+  bp.frequency.setValueAtTime(${p.bpStart}, t); bp.frequency.exponentialRampToValueAtTime(${p.bpEnd}, t + dur); bp.Q.value = ${p.bpQ};
+  const lfo = audioCtx.createOscillator(); lfo.type = '${p.lfoShape}';
+  lfo.frequency.setValueAtTime(${p.lfoStart}, t); lfo.frequency.exponentialRampToValueAtTime(${p.lfoEnd}, t + dur);
+  const ld = audioCtx.createGain(); ld.gain.value = ${p.lfoDepth};
+  const car = audioCtx.createGain();
+  car.gain.setValueAtTime(${p.spinGain}, t); car.gain.linearRampToValueAtTime(${(p.spinGain * 1.1).toFixed(4)}, t + 0.05);
+  car.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  n.connect(bp); bp.connect(car); lfo.connect(ld); ld.connect(car.gain); car.connect(audioCtx.destination);
+  n.start(t); n.stop(t + dur); lfo.start(t); lfo.stop(t + dur);
+
+  // Low-end body
+  const n2 = audioCtx.createBufferSource(); n2.buffer = buffer;
+  const lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(${p.lpStart}, t); lp.frequency.exponentialRampToValueAtTime(${p.lpEnd}, t + dur); lp.Q.value = ${p.lpQ};
+  const g2 = audioCtx.createGain();
+  g2.gain.setValueAtTime(${p.lowGain}, t); g2.gain.exponentialRampToValueAtTime(0.001, t + dur * ${p.lowDecay});
+  n2.connect(lp); lp.connect(g2); g2.connect(audioCtx.destination);
+  n2.start(t); n2.stop(t + dur);${p.transOn ? `
+
+  // Transient snap
+  const n3 = audioCtx.createBufferSource(); n3.buffer = buffer;
+  const hp = audioCtx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = ${p.transFreq}; hp.Q.value = 0.3;
+  const g3 = audioCtx.createGain();
+  g3.gain.setValueAtTime(${p.transGain}, t); g3.gain.exponentialRampToValueAtTime(0.001, t + ${p.transDur});
+  n3.connect(hp); hp.connect(g3); g3.connect(audioCtx.destination);
+  n3.start(t); n3.stop(t + ${(p.transDur + 0.01).toFixed(3)});` : ''}
+}`;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('copyBtn');
+    const prev = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => btn.textContent = prev, 1200);
+  });
+});
+</script>
+</body>
+</html>

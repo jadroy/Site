@@ -4192,7 +4192,7 @@ a.company:hover {
   .tab-bar {
     bottom: 22px;
   }
-  .tab-bar__tab { padding: 5px 12px; font-size: 10px; }
+  .tab-bar__tab { padding: 8px 16px; font-size: 12px; }
   .tab-bar__hint { display: none; }
   .tab-bar__dots { display: none; }
   .tab-bar__dragzone { display: none; }
@@ -4379,15 +4379,15 @@ a.company:hover {
   }
 
   .closing-socials a {
-    font-size: clamp(40px, 12vw, 72px);
+    font-size: clamp(32px, 10vw, 56px);
     letter-spacing: -0.06em;
     white-space: nowrap;
     padding-left: 0;
-    opacity: 0.4 !important;
+    opacity: 0.85 !important;
   }
 
   .closing-socials a:active {
-    opacity: 0.8 !important;
+    opacity: 0.5 !important;
   }
 
   .closing-socials-caret {
@@ -4399,7 +4399,7 @@ a.company:hover {
     min-width: auto;
     height: auto;
     min-height: auto;
-    padding: 48px var(--grid-margin) 0;
+    padding: 48px var(--grid-margin) 32px;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -4408,9 +4408,20 @@ a.company:hover {
   }
 
   .info-container {
-    padding: 0 24px;
-    border-radius: 12px;
+    padding: 8px 24px;
+    border-radius: 20px;
     overflow: visible;
+    transform: rotate(-0.8deg);
+    box-shadow: none;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .info-container::before {
+    opacity: 0.02;
+  }
+
+  .info-container:hover {
+    box-shadow: none;
   }
 
   .featured-panel {
@@ -4431,7 +4442,7 @@ a.company:hover {
 
   .featured-container {
     padding: 4px;
-    border-radius: 12px;
+    border-radius: 20px;
     overflow: hidden;
     transform: none;
     transition: transform 0.25s ease-out;
@@ -4445,7 +4456,7 @@ a.company:hover {
   .featured-container video,
   .featured-container img {
     height: auto;
-    max-height: 60svh;
+    max-height: 52svh;
   }
 
   /* Always show project info on touch devices */
@@ -4466,7 +4477,7 @@ a.company:hover {
 
   .writing-container {
     padding: 36px 24px 48px;
-    border-radius: 12px 12px 0 0;
+    border-radius: 20px 20px 0 0;
     overflow: visible;
   }
 
@@ -4555,9 +4566,14 @@ a.company:hover {
     height: 44px;
   }
 
+  .welcome-name, .closing-text {
+    font-size: 24px;
+  }
+
+
   /* --- Readability --- */
   .status-bar {
-    font-size: 11px;
+    font-size: 10px;
     height: 28px;
     padding: 0 var(--grid-margin);
   }
@@ -4597,7 +4613,7 @@ a.company:hover {
   }
 
   .info-grid .info-section + .info-section {
-    border-top: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+    border-top: 1.5px dashed var(--border, rgba(0, 0, 0, 0.12));
     padding-top: 0;
     margin-top: 0;
   }
@@ -4619,29 +4635,44 @@ a.company:hover {
   }
 
   .section-label {
+    font-family: var(--font-departure-mono, monospace);
     font-size: 28px;
+    font-weight: 400;
     color: var(--text);
-    letter-spacing: -0.02em;
-    padding: 20px 0;
+    letter-spacing: 0.02em;
+    padding: 16px 0;
     margin-bottom: 0;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: space-between;
     -webkit-tap-highlight-color: transparent;
+    transition: font-size 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                letter-spacing 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                padding 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                color 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .section-open .section-label {
+    font-size: 20px;
+    letter-spacing: 0.02em;
+    color: var(--text-faint, #bbb);
+    padding: 12px 0 8px;
   }
 
   .section-label::after {
     content: '+';
-    font-size: 20px;
+    font-size: 30px;
     font-weight: 300;
-    color: var(--text-faint);
-    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    color: #e8660a;
+    transition: font-size 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                color 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .section-open .section-label::after {
     content: '\2212';
-    transform: none;
+    color: var(--text-faint);
+    font-size: 24px;
   }
 
   .section-body {
@@ -4652,25 +4683,49 @@ a.company:hover {
 
   .section-open .section-body {
     grid-template-rows: 1fr;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .section-body > * {
     overflow: hidden;
+    grid-column: 1;
   }
 
   .section-open .section-body > * {
-    padding-bottom: 24px;
+    padding-bottom: 20px;
+  }
+
+  .statement-text {
+    line-height: 1.7;
   }
 
   .conviction-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
+  }
+
+  .conviction-item {
+    line-height: 1.7;
   }
 
   .work-row {
-    grid-template-columns: 1fr;
-    gap: 4px;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+
+  /* Hide desktop hover decorations on touch */
+  .info-container .statement-text > div::before,
+  .info-container .statement-text > div::after,
+  .info-container .work-card::before,
+  .info-container .work-card::after,
+  .info-container .conviction-item::before,
+  .info-container .conviction-item::after,
+  .info-container .section-links a::before,
+  .info-container .section-links a::after {
+    display: none;
   }
 
   .info-row {

@@ -303,6 +303,7 @@ export default function Home() {
       {/* Welcome — entrance */}
       <div className="welcome-panel" onClick={() => scrollToPanel('info')} style={{ width: `${welcomeWidth}vw`, minWidth: `${welcomeWidth}vw` }}>
         <span className="welcome-name">Roy Jad</span>
+
       </div>
 
       {/* 12-Column Grid Overlay (debug) */}
@@ -579,7 +580,7 @@ export default function Home() {
           {/* Statement */}
           <section className={`info-section info-section-statement intro-fade${openSections.has('about') ? ' section-open' : ''}`}>
             <h2 className="section-label" style={{ '--print-idx': 0 } as React.CSSProperties} onClick={() => isMobile && toggleSection('about')}>About</h2>
-            <div className="section-body">
+            <div className="section-body" onClick={() => isMobile && openSections.has('about') && toggleSection('about')}>
               <div className="statement-text">
                 {statementLines.map((line, i) => <div key={i} style={{ '--print-idx': i + 1 } as React.CSSProperties}>{line}</div>)}
               </div>
@@ -589,7 +590,7 @@ export default function Home() {
           {/* Work */}
           <section className={`info-section info-section-full intro-fade${openSections.has('work') ? ' section-open' : ''}`}>
             <h2 className="section-label" style={{ '--print-idx': 4 } as React.CSSProperties} onClick={() => isMobile && toggleSection('work')}>Work</h2>
-            <div className="section-body">
+            <div className="section-body" onClick={(e) => { if (isMobile && openSections.has('work') && !(e.target as HTMLElement).closest('a')) toggleSection('work'); }}>
               <div className="work-row">
                 <a href="https://context.ai" className="work-card" target="_blank" rel="noopener noreferrer" style={{ '--print-idx': 5 } as React.CSSProperties}>
                   <span className="company">Context<svg className="external-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" strokeWidth="1.2"/></svg></span>
@@ -608,7 +609,7 @@ export default function Home() {
           {/* Convictions */}
           <section className={`info-section info-section-full intro-fade${openSections.has('convictions') ? ' section-open' : ''}`}>
             <h2 className="section-label" style={{ '--print-idx': 7 } as React.CSSProperties} onClick={() => isMobile && toggleSection('convictions')}>Convictions</h2>
-            <div className="section-body">
+            <div className="section-body" onClick={() => isMobile && openSections.has('convictions') && toggleSection('convictions')}>
               <div className="conviction-list">
                 <div className="conviction-item" style={{ '--print-idx': 8 } as React.CSSProperties}>Self-driving cars are necessary</div>
                 <div className="conviction-item" style={{ '--print-idx': 9 } as React.CSSProperties}>Clarity and intentionality are core to a good life</div>
